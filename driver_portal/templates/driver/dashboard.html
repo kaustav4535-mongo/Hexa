@@ -1,0 +1,531 @@
+{% extends "driver/base.html" %}
+{% block title %}Dashboard — Driver Hub{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+  .dash-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; }
+  .span-2    { grid-column:1/-1; }
+
+  /* Big online toggle */
+  .online-hero {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-lg); padding:1.75rem; text-align:center;
+    position:relative; overflow:hidden; box-shadow:var(--shadow-sm);
+  }
+  .online-hero::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg,var(--brand),#27AE60);
+  }
+  .toggle-outer {
+    width:80px; height:44px; border-radius:22px;
+    border:2px solid var(--border); background:var(--surface-2);
+    cursor:pointer; position:relative; transition:all .3s;
+    margin:1.1rem auto; display:flex; align-items:center; outline:none;
+  }
+  .toggle-outer.on { background:var(--brand); border-color:var(--brand); box-shadow:0 0 20px rgba(30,132,73,.25); }
+  .toggle-knob {
+    width:34px; height:34px; border-radius:50%; background:#fff;
+    position:absolute; left:3px; top:3px; transition:transform .3s;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1rem; box-shadow:var(--shadow-sm);
+  }
+  .toggle-outer.on .toggle-knob { transform:translateX(36px); }
+  .hero-title { font-family:var(--font-h); font-size:1.1rem; font-weight:700; margin-bottom:.2rem; }
+  .hero-sub   { font-size:.82rem; color:var(--text-3); }
+
+  /* Request cards */
+  .req-card {
+    background:var(--surface); border:1.5px solid var(--border);
+    border-radius:var(--radius-lg); padding:1.1rem; margin-bottom:.75rem;
+    transition:all .2s; animation:slideIn .3s ease;
+  }
+  .req-card:hover { border-color:var(--brand); box-shadow:var(--shadow-md); }
+  .req-card.assigned { border-color:var(--accent); background:var(--accent-lt); }
+  .req-route { font-size:.9rem; font-weight:600; margin-bottom:.45rem; }
+  .req-meta  { display:flex; gap:.6rem; flex-wrap:wrap; font-size:.77rem; color:var(--text-3); margin-bottom:.85rem; }
+  .req-fare  { color:var(--brand); font-weight:700; font-family:var(--font-h); }
+  .req-actions { display:flex; gap:.6rem; }
+
+  /* Active ride */
+  .active-card {
+    background:linear-gradient(135deg,var(--info-lt),var(--brand-lt));
+    border:1.5px solid var(--brand); border-radius:var(--radius-lg); padding:1.25rem;
+  }
+
+  @media(max-width:700px){ .dash-grid{grid-template-columns:1fr;} .span-2{grid-column:auto;} }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% if not profile_complete %}
+<div style="background:#FFF8E1;border:1.5px solid #F59E0B;border-radius:var(--radius-md);padding:.85rem 1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap">
+  <div style="display:flex;align-items:center;gap:.6rem;font-size:.85rem;color:#92400E">
+    <i class="fa fa-triangle-exclamation"></i>
+    <div><strong>Complete your profile</strong> — Add phone, vehicle number and license to receive bookings.</div>
+  </div>
+  <a href="/profile/setup" class="btn btn-sm" style="background:#F59E0B;color:#fff;border:none;flex-shrink:0">
+    Complete Now →
+  </a>
+</div>
+{% endif %}
+
+{% if driver.approval == 'pending' %}
+<div style="background:var(--info-lt);border:1px solid var(--info);border-radius:var(--radius-md);padding:.75rem 1rem;margin-bottom:1rem;display:flex;gap:.6rem;font-size:.84rem;color:var(--info)">
+  <i class="fa fa-clock"></i>
+  <div><strong>Profile under review</strong> — You can go online and receive bookings. Admin may verify your documents later.</div>
+</div>
+{% endif %}
+{% if driver.approval == 'rejected' %}
+<div style="background:var(--warning-lt);border:1px solid var(--warning);border-radius:var(--radius-md);padding:.75rem 1rem;margin-bottom:1rem;display:flex;gap:.6rem;font-size:.84rem;color:#7D6608">
+  <i class="fa fa-triangle-exclamation"></i>
+  <div><strong>Documents need review</strong> — Please update your profile with correct documents. You can still go online.</div>
+</div>
+{% endif %}
+
+<!-- Stats Row -->
+<div class="stats-row fade-up">
+  <div class="stat-card green">
+    <div class="stat-icon">💰</div>
+    <div class="stat-value">₹{{ "%.0f"|format(today_earnings) }}</div>
+    <div class="stat-label"><span data-i18n="drv.todayEarn">Today's Earnings</span></div>
+  </div>
+  <div class="stat-card orange">
+    <div class="stat-icon">🛺</div>
+    <div class="stat-value">{{ today_rides }}</div>
+    <div class="stat-label"><span data-i18n="drv.todayRides">Today's Rides</span></div>
+  </div>
+  <div class="stat-card warn">
+    <div class="stat-icon">⭐</div>
+    <div class="stat-value">{{ "%.1f"|format(driver.rating or 5.0) }}</div>
+    <div class="stat-label">Rating</div>
+  </div>
+  <div class="stat-card info">
+    <div class="stat-icon">💼</div>
+    <div class="stat-value">₹{{ "%.0f"|format(driver.wallet or 0) }}</div>
+    <div class="stat-label">Wallet</div>
+  </div>
+</div>
+
+<div class="dash-grid">
+
+  <!-- Online Toggle Card -->
+  <div class="online-hero fade-up">
+    <div class="hero-title" id="hero-title">
+      {% if driver.status == 'online' %}<span data-i18n="drv.youOnline">You're Online 🟢</span>{% else %}<span data-i18n="drv.youOffline">You're Offline</span>{% endif %}
+    </div>
+    <div class="hero-sub" id="hero-sub">
+      {% if driver.status == 'online' %}<span data-i18n="drv.ridersFind">Riders can find and book you</span>{% else %}<span data-i18n="drv.tapAccept">Tap to start accepting rides</span>{% endif %}
+    </div>
+    <button class="toggle-outer {% if driver.status == 'online' %}on{% endif %}"
+            id="big-toggle" onclick="doBigToggle()">
+      <div class="toggle-knob" id="toggle-knob">
+        {% if driver.status == 'online' %}🟢{% else %}⚫{% endif %}
+      </div>
+    </button>
+    <div style="font-size:.74rem;color:var(--text-3)" id="toggle-hint">
+      Tap to {% if driver.status == 'online' %}go offline{% else %}go online{% endif %}
+    </div>
+    <!-- Live poll indicator -->
+    <div id="poll-live" style="margin-top:.6rem;font-size:.72rem;color:var(--text-3);display:{% if driver.status == 'online' %}flex{% else %}none{% endif %};align-items:center;justify-content:center;gap:.35rem">
+      <span class="pulse-anim" style="width:6px;height:6px;border-radius:50%;background:var(--brand);display:inline-block"></span>
+      Scanning for ride requests...
+    </div>
+  </div>
+
+  <!-- Stats card -->
+  <div class="card card-p fade-up">
+    <div class="card-title"><i class="fa fa-chart-simple" style="color:var(--accent)"></i> <span data-i18n="drv.allTime">All-Time Stats</span></div>
+    <div style="display:flex;flex-direction:column;gap:.75rem">
+      {% for label,val,color in [
+        ('Total Rides',   driver.total_rides or 0,                          'var(--text-1)'),
+        ('Total Earned', '₹'+("%.0f"|format(driver.total_earnings or 0)),   'var(--brand)'),
+        ('Vehicle',       driver.vehicle_number or '—',                     'var(--text-1)'),
+      ] %}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:.38rem 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:.85rem;color:var(--text-3)">{{ label }}</span>
+        <span style="font-weight:700;color:{{ color }}">{{ val }}</span>
+      </div>
+      {% endfor %}
+      <a href="/earnings/" class="btn btn-secondary btn-sm" style="justify-content:center"><span data-i18n="earn.title">Earnings</span> →</a>
+    </div>
+  </div>
+
+  <!-- ═══ INCOMING RIDE REQUESTS ═══ (full width) -->
+  <div class="span-2 fade-up">
+    <div class="card card-p">
+      <div class="card-title" style="justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <i class="fa fa-bell" style="color:var(--brand)"></i>
+          <span data-i18n="drv.incoming">Incoming Ride Requests</span>
+          <span id="req-count-badge" class="badge badge-success" style="display:none"></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:.6rem">
+          <span id="last-updated" style="font-size:.7rem;color:var(--text-3)"></span>
+          <button onclick="loadRequests()" class="btn btn-secondary btn-sm" title="Refresh">
+            <i class="fa fa-rotate-right" id="refresh-icon"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="requests-area">
+        <!-- Filled by JS -->
+        <div style="text-align:center;padding:2.5rem;color:var(--text-3)">
+          <div style="font-size:2.5rem;margin-bottom:.5rem">📡</div>
+          <div style="font-size:.86rem" id="req-empty-msg">
+            {% if driver.status == 'online' %}
+              Scanning for nearby ride requests...
+            {% else %}
+              Go online to start accepting ride requests.
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══ MY PENDING INTERESTS ══ -->
+  <div class="span-2 fade-up" id="my-interests-section" style="display:none">
+    <div class="card card-p">
+      <div class="card-title">
+        <i class="fa fa-clock" style="color:var(--accent)"></i>
+        My Interests — Waiting for Customer
+      </div>
+      <div id="my-interests-list">
+        <div style="text-align:center;padding:1rem;color:var(--text-3);font-size:.85rem">
+          <i class="fa fa-spinner spin"></i> Loading...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active ride (if any) -->
+  {% if active_rides %}
+  <div class="span-2 fade-up">
+    {% set r = active_rides[0] %}
+    <div class="active-card">
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.75rem">
+        <span class="pulse-anim" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--brand)"></span>
+        <span style="font-family:var(--font-h);font-weight:700;font-size:.9rem">Active Ride</span>
+        <span class="badge badge-info" style="margin-left:auto">🛺 In Progress</span>
+      </div>
+      <div style="font-size:.78rem;color:var(--text-3);margin-bottom:.5rem">#{{ r._id[:8].upper() }} · {{ r.hours }}h</div>
+      <div style="margin-bottom:.9rem">
+        <div style="display:flex;align-items:center;gap:.5rem;font-size:.87rem;margin-bottom:.3rem">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--brand);flex-shrink:0"></div>
+          {{ r.pickup_address }}
+        </div>
+        {% if r.dropoff_address %}
+        <div style="display:flex;align-items:center;gap:.5rem;font-size:.87rem">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--danger);flex-shrink:0"></div>
+          {{ r.dropoff_address }}
+        </div>
+        {% endif %}
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-family:var(--font-h);font-size:1.1rem;font-weight:800;color:var(--brand)">₹{{ "%.0f"|format(r.fare) }}</span>
+        <div style="display:flex;gap:.5rem">
+          <a href="/rides/{{ r._id }}" class="btn btn-secondary btn-sm"><i class="fa fa-map"></i> Details</a>
+          <button onclick="completeRide('{{ r._id }}')" class="btn btn-primary btn-sm">
+            <i class="fa fa-flag-checkered"></i> Complete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+'use strict';
+
+// ── State (read from server-rendered template) ────────────────────────────────
+var _online  = {{ 'true' if driver.status == 'online' else 'false' }};
+var _pollInt = null;
+var _isToggling = false;
+
+// ── Sync sidebar UI on page load ──────────────────────────────────────────────
+updateStatusUI(_online);
+
+// ── Big toggle ────────────────────────────────────────────────────────────────
+window.doBigToggle = function() {
+  if (_isToggling) return;  // prevent double-click
+  _isToggling = true;
+
+  var btn  = document.getElementById('big-toggle');
+  var knob = document.getElementById('toggle-knob');
+  btn.disabled = true;
+  knob.textContent = '⏳';
+
+  fetch('/dashboard/toggle-status', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      _isToggling = false;
+      btn.disabled = false;
+
+      if (!data.success) {
+        knob.textContent = _online ? '🟢' : '⚫';
+        alert(data.error || 'Cannot change status.');
+        return;
+      }
+
+      _online = (data.status === 'online');
+      // Update big toggle visuals
+      btn.classList.toggle('on', _online);
+      knob.textContent = _online ? '🟢' : '⚫';
+      document.getElementById('hero-title').textContent = _online ? "You're Online 🟢" : "You're Offline";
+      document.getElementById('hero-sub').textContent = _online ? 'Riders can find and book you' : 'Tap to start accepting rides';
+      document.getElementById('toggle-hint').textContent = _online ? 'Tap to go offline' : 'Tap to go online';
+      document.getElementById('poll-live').style.display = _online ? 'flex' : 'none';
+
+      // Sync sidebar buttons
+      updateStatusUI(_online);
+
+      if (_online) {
+        startPolling();
+      } else {
+        stopPolling();
+        showOfflineState();
+      }
+    })
+    .catch(function() {
+      _isToggling = false;
+      btn.disabled = false;
+      knob.textContent = _online ? '🟢' : '⚫';
+      alert('Network error. Please check your connection.');
+    });
+};
+
+// ── Polling management ────────────────────────────────────────────────────────
+function startPolling() {
+  loadRequests();                            // immediate first call
+  stopPolling();                             // clear any existing interval
+  _pollInt = setInterval(loadRequests, 6000); // then every 6s
+}
+
+function stopPolling() {
+  if (_pollInt) {
+    clearInterval(_pollInt);
+    _pollInt = null;
+  }
+}
+
+function showOfflineState() {
+  var area = document.getElementById('requests-area');
+  var badge = document.getElementById('req-count-badge');
+  if (badge) badge.style.display = 'none';
+  if (area) area.innerHTML =
+    '<div style="text-align:center;padding:2.5rem;color:var(--text-3)">' +
+    '<div style="font-size:2.5rem;margin-bottom:.5rem">📡</div>' +
+    '<div style="font-size:.86rem">You are offline. Tap the toggle to go online.</div>' +
+    '</div>';
+}
+
+// ── Load & render incoming requests ──────────────────────────────────────────
+window.loadRequests = function() {
+  var icon = document.getElementById('refresh-icon');
+  if (icon) icon.className = 'fa fa-spinner spin';
+
+  fetch('/dashboard/api/requests')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (icon) icon.className = 'fa fa-rotate-right';
+
+      var area  = document.getElementById('requests-area');
+      var badge = document.getElementById('req-count-badge');
+      var ts    = document.getElementById('last-updated');
+      if (ts) ts.textContent = 'Updated ' + new Date().toLocaleTimeString();
+
+      if (!area) return;
+
+      // Offline response
+      if (data.offline) {
+        showOfflineState();
+        if (badge) badge.style.display = 'none';
+        return;
+      }
+
+      // No requests
+      if (!data.count) {
+        if (badge) badge.style.display = 'none';
+        area.innerHTML =
+          '<div style="text-align:center;padding:2rem;color:var(--text-3)">' +
+          '<div style="font-size:2rem;margin-bottom:.4rem">📡</div>' +
+          '<div style="font-size:.86rem">No ride requests right now. Stay online — customers are searching!</div>' +
+          '</div>';
+        return;
+      }
+
+      // Show requests
+      if (badge) {
+        badge.style.display = '';
+        badge.textContent = data.count + ' new';
+      }
+
+      area.innerHTML = data.requests.map(function(r) {
+        // pending = quote confirmed, awaiting payment
+        // confirmed = payment done, ready to start
+        var isConfirmed = (r.status === 'pending' || r.status === 'confirmed');
+        var cardStyle   = isConfirmed ? 'border-color:var(--brand);background:var(--brand-lt)' : '';
+
+        // Build action buttons based on state
+        var actions = '';
+        if (isConfirmed) {
+          // Customer confirmed this driver — go to ride detail
+          actions = '<a href="/rides/' + r._id + '" class="btn btn-primary btn-sm" style="background:var(--brand)">' +
+                    '<i class="fa fa-check-circle"></i> Confirmed! View Ride →</a>';
+        } else if (r.already_sent) {
+          // Driver already sent a quote — show edit/withdraw
+          var earn = Math.max(0, parseFloat(r.my_price) - 2);
+          actions = '<div style="width:100%">' +
+                    '<div style="font-size:.8rem;color:var(--brand);font-weight:700;margin-bottom:.4rem">' +
+                    '✓ Your quote: ₹' + parseFloat(r.my_price).toFixed(0) +
+                    ' &nbsp;·&nbsp; You get ₹' + earn.toFixed(0) + ' (₹2 fee)</div>' +
+                    '<div style="display:flex;gap:.4rem;flex-wrap:wrap">' +
+                    '<button class="btn btn-secondary btn-sm" onclick="openQuoteModal('' + r._id + '',' + r.my_price + ')">' +
+                    '<i class="fa fa-pen"></i> Edit Price</button>' +
+                    '<button style="background:none;border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:.75rem;color:var(--text-3);padding:.3rem .65rem" onclick="withdrawQuote('' + r._id + '')">' +
+                    'Withdraw</button></div></div>';
+        } else {
+          // Open booking — send a quote
+          actions = '<button class="btn btn-primary btn-sm" onclick="openQuoteModal('' + r._id + '',0)">' +
+                    '<i class="fa fa-tag"></i> Send My Price</button>' +
+                    '<button class="btn btn-secondary btn-sm" onclick="skipRide('' + r._id + '')">' +
+                    '<i class="fa fa-xmark"></i> Skip</button>';
+        }
+
+        return '<div class="req-card" id="req-' + r._id + '" style="' + cardStyle + '">' +
+          '<div class="req-route">' +
+          '<span style="color:var(--brand)">📍</span> ' + esc(r.pickup) +
+          (r.dropoff ? ' <span style="color:var(--text-3)">→</span> <span style="color:var(--danger)">🏁</span> ' + esc(r.dropoff) : '') +
+          '</div>' +
+          '<div class="req-meta">' +
+          (r.customer ? '<span><i class="fa fa-user"></i> ' + esc(r.customer) + '</span>' : '') +
+          (r.distance ? '<span><i class="fa fa-road"></i> ' + parseFloat(r.distance).toFixed(1) + 'km</span>' : '') +
+          (r.reference > 0 ? '<span style="color:var(--text-3)">Zone ref: ₹' + parseFloat(r.reference).toFixed(0) + '</span>' : '') +
+          (r.quotes_count > 0 ? '<span style="color:var(--accent)"><i class="fa fa-comments"></i> ' + r.quotes_count + ' quote(s)</span>' : '') +
+          (r.notes ? '<span style="font-style:italic;color:var(--text-3)">' + esc(r.notes) + '</span>' : '') +
+          '</div>' +
+          '<div class="req-actions">' + actions + '</div>' +
+          '</div>';
+      }).join('');
+    })
+    .catch(function() {
+      if (icon) icon.className = 'fa fa-rotate-right';
+    });
+};
+
+// ── Quote modal ───────────────────────────────────────────────────────────────
+window.openQuoteModal = function(bookingId, currentPrice) {
+  var price = prompt(
+    '💬 Enter your price for this ride:\n' +
+    (currentPrice > 0 ? 'Current quote: ₹' + currentPrice : 'Set your price') +
+    '\n\nYou receive: (your price − ₹2 platform fee)',
+    currentPrice > 0 ? currentPrice : ''
+  );
+  if (price === null) return;
+  price = parseFloat(price);
+  if (!price || price < 10) { alert('Minimum price is ₹10'); return; }
+  var earn = Math.max(0, price - 2);
+  if (!confirm('Send quote of ₹' + price.toFixed(0) + '?\nYou will receive: ₹' + earn.toFixed(0))) return;
+  fetch('/dashboard/send-quote/' + bookingId, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({price: price})
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if (data.success) {
+      var toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--brand);color:#fff;padding:.7rem 1.5rem;border-radius:30px;font-size:.88rem;font-weight:700;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,.2)';
+      toast.textContent = '✓ Quote ₹' + price.toFixed(0) + ' sent! Waiting for customer...';
+      document.body.appendChild(toast);
+      setTimeout(function(){ toast.remove(); loadRequests(); }, 3000);
+    } else { alert(data.error || 'Could not send quote'); }
+  })
+  .catch(function(){ alert('Network error. Try again.'); });
+};
+
+// ── Withdraw Quote ────────────────────────────────────────────────────────────
+window.withdrawQuote = function(id) {
+  if (!confirm('Withdraw your price quote for this ride?')) return;
+  fetch('/dashboard/withdraw-quote/' + id, {method:'POST'})
+    .then(function(r){ return r.json(); })
+    .then(function(data){ if(data.success) loadRequests(); });
+};
+// ── Skip ride ─────────────────────────────────────────────────────────────────
+window.skipRide = function(id) {
+  fetch('/dashboard/reject/' + id, { method: 'POST' });
+  var card = document.getElementById('req-' + id);
+  if (card) {
+    card.style.transition = 'opacity .3s, transform .3s';
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(20px)';
+    setTimeout(function() { if (card.parentNode) card.remove(); }, 300);
+  }
+};
+
+// ── Complete active ride ──────────────────────────────────────────────────────
+window.completeRide = function(id) {
+  if (!confirm('Mark this ride as completed?')) return;
+  fetch('/rides/' + id + '/status', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: 'completed' })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.success) location.reload();
+    else alert(data.error || 'Could not update status.');
+  });
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+
+// ── Load bookings where I expressed interest ──────────────────────────────────
+async function loadMyInterests() {
+  try {
+    var r = await fetch('/dashboard/api/my-interests');
+    var d = await r.json();
+    var section = document.getElementById('my-interests-section');
+    var list    = document.getElementById('my-interests-list');
+    if (!section || !list) return;
+
+    if (!d.bookings || d.bookings.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+    section.style.display = '';
+    list.innerHTML = d.bookings.map(function(b) {
+      return '<div style="background:var(--surface-2);border-radius:10px;padding:.85rem;margin-bottom:.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">' +
+        '<div>' +
+          '<div style="font-size:.85rem;font-weight:600">' + esc(b.pickup) + (b.dropoff ? ' → ' + esc(b.dropoff) : '') + '</div>' +
+          '<div style="font-size:.75rem;color:var(--brand);font-weight:600">Your quote: ₹' + parseFloat(b.my_price).toFixed(0) + ' · ' + b.quotes + ' driver(s) quoted</div>' +
+        '</div>' +
+        '<span class="badge badge-warning"><i class="fa fa-clock"></i> Waiting</span>' +
+      '</div>';
+    }).join('');
+  } catch(e) {}
+}
+if (_online) {
+  loadMyInterests();
+  setInterval(loadMyInterests, 15000);
+}
+
+// ── Boot: start polling if already online ────────────────────────────────────
+if (_online) {
+  startPolling();
+}
+
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "admin/base.html" %}
+{% block title %}Pricing Engine — Admin{% endblock %}
+{% block page_title %}Pricing Engine{% endblock %}
+{% block extra_css %}
+<style>
+  .zone-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:1rem; }
+  .zone-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.1rem; transition:border-color .15s; box-shadow:var(--shadow-sm); }
+  .zone-card:hover { border-color:var(--brand); }
+  .zone-card.off { opacity:.55; }
+  .z-rates { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.5rem; margin:.85rem 0; }
+  .z-rate  { background:var(--surface-2); border-radius:var(--radius-sm); padding:.55rem; text-align:center; }
+  .z-rv    { font-family:var(--font-h); font-size:.95rem; font-weight:700; color:var(--brand); }
+  .z-rl    { font-size:.6rem; color:var(--text-3); margin-top:.1rem; }
+  .calc-section { background:var(--surface); border:1.5px solid var(--brand); border-radius:var(--radius-lg); padding:1.25rem; margin-bottom:1.5rem; }
+  .calc-result { background:var(--brand-lt); border:1px solid var(--brand); border-radius:var(--radius-md); padding:1rem; margin-top:.9rem; display:none; }
+  .cr-row  { display:flex; justify-content:space-between; font-size:.84rem; padding:.22rem 0; }
+  .cr-total{ border-top:1px solid var(--brand); padding-top:.5rem; margin-top:.3rem; font-weight:800; font-size:.95rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="ph">
+  <div><div class="ph-title">Pricing Engine</div><div class="ph-sub">{{ zones|length }} zones · Changes go live instantly</div></div>
+  <a href="/pricing/add" class="btn btn-primary"><i class="fa fa-plus"></i> Add Zone</a>
+</div>
+
+<div class="calc-section fade-up">
+  <div class="card-title" style="margin-bottom:.75rem"><i class="fa fa-calculator" style="color:var(--brand)"></i> Live Fare Calculator Preview</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem">
+    <div class="form-group" style="margin:0"><label class="form-label">Zone</label><select id="cz" class="form-control" onchange="calcP()"><option value="">— Select —</option>{% for z in zones %}<option value="{{ z._id }}">{{ z.name }}</option>{% endfor %}</select></div>
+    <div class="form-group" style="margin:0"><label class="form-label">Hours</label><input type="number" id="ch" class="form-control" value="1" min="0.5" step="0.5" oninput="calcP()"></div>
+    <div class="form-group" style="margin:0"><label class="form-label">KM</label><input type="number" id="ck" class="form-control" value="0" min="0" step="0.5" oninput="calcP()"></div>
+    <div style="display:flex;flex-direction:column;gap:.3rem"><label class="form-label">Modifiers</label>
+      <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" id="cn" onchange="calcP()"> 🌙 Night</label>
+      <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" id="cp" onchange="calcP()"> ⚡ Peak</label>
+      <label style="display:flex;align-items:center;gap:.4rem;font-size:.8rem;cursor:pointer"><input type="checkbox" id="ce" onchange="calcP()"> 🚨 Emergency</label>
+    </div>
+  </div>
+  <div class="calc-result" id="calc-result">
+    <div class="cr-row"><span style="color:var(--text-2)">Base fare</span><span id="r-base">—</span></div>
+    <div class="cr-row"><span style="color:var(--text-2)">KM charge</span><span id="r-km">—</span></div>
+    <div class="cr-row"><span style="color:var(--text-2)">Hour charge</span><span id="r-hr">—</span></div>
+    <div class="cr-row"><span style="color:var(--text-2)">Multiplier</span><span id="r-mx">—</span></div>
+    <div class="cr-row cr-total"><span>Customer Pays</span><span id="r-tot" style="color:var(--brand);font-family:var(--font-h);font-size:1.1rem">—</span></div>
+  </div>
+</div>
+
+{% if zones %}
+<div class="zone-grid">
+  {% for z in zones %}
+  <div class="zone-card {% if not z.get('active',True) %}off{% endif %} fade-up">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.4rem">
+      <div>
+        <div style="font-family:var(--font-h);font-size:.95rem;font-weight:800">{{ z.name }}</div>
+        <div style="font-size:.72rem;color:var(--text-3)">{% if z.district %}{{ z.district }}, {% endif %}{{ z.state or 'No location' }}</div>
+      </div>
+      {% if z.get('active',True) %}<span class="badge b-green">Active</span>{% else %}<span class="badge b-muted">Inactive</span>{% endif %}
+        {% if z.center_lat %}<span class="badge b-blue" style="margin-left:.3rem"><i class="fa fa-location-dot"></i> Geo-bounded</span>{% endif %}
+    </div>
+    <!-- Live stats from zone_engine -->
+    <div style="display:flex;gap:.75rem;margin:.65rem 0;font-size:.75rem;flex-wrap:wrap">
+      <span style="color:var(--brand)"><i class="fa fa-circle-dot"></i> {{ z.online_drivers|default(0) }} drivers online</span>
+      <span style="color:var(--info)"><i class="fa fa-route"></i> {{ z.active_rides|default(0) }} active rides</span>
+      <span style="color:var(--accent)"><i class="fa fa-clock"></i> {{ z.pending_bookings|default(0) }} pending</span>
+      {% if z.radius_km %}<span style="color:var(--text-3)"><i class="fa fa-circle-half-stroke"></i> {{ z.radius_km }}km radius</span>{% endif %}
+      {% if z.interzone_surcharge and z.interzone_surcharge != 1.0 %}<span style="color:var(--warn)"><i class="fa fa-bolt"></i> {{ z.interzone_surcharge }}× out-of-zone</span>{% endif %}
+    </div>
+    <div class="z-rates">
+      <div class="z-rate"><div class="z-rv">₹{{ z.base_fare }}</div><div class="z-rl">Base</div></div>
+      <div class="z-rate"><div class="z-rv">₹{{ z.per_km_rate }}/km</div><div class="z-rl">Per KM</div></div>
+      <div class="z-rate"><div class="z-rv">₹{{ z.per_hour_rate }}/h</div><div class="z-rl">Per Hour</div></div>
+      <div class="z-rate"><div class="z-rv">₹{{ z.minimum_fare }}</div><div class="z-rl">Minimum</div></div>
+      <div class="z-rate"><div class="z-rv">{{ z.night_surcharge }}×</div><div class="z-rl">Night</div></div>
+      <div class="z-rate"><div class="z-rv">{{ z.peak_multiplier }}×</div><div class="z-rl">Peak</div></div>
+    </div>
+    <div style="display:flex;gap:.4rem;flex-wrap:wrap">
+      <a href="/pricing/{{ z._id }}/edit" class="btn btn-secondary btn-sm"><i class="fa fa-pen"></i> Edit</a>
+      <button onclick="toggleZone('{{ z._id }}')" class="btn btn-secondary btn-sm">
+        {% if z.get('active',True) %}<i class="fa fa-eye-slash"></i> Disable{% else %}<i class="fa fa-eye"></i> Enable{% endif %}
+      </button>
+      <form method="POST" action="/pricing/{{ z._id }}/delete" onsubmit="return confirm('Delete?')" style="margin-left:auto">
+        <button class="btn btn-danger btn-sm btn-icon"><i class="fa fa-trash"></i></button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div style="text-align:center;padding:5rem;color:var(--text-3)"><div style="font-size:3rem;margin-bottom:1rem">📍</div><div style="font-family:var(--font-h);font-size:1.1rem;font-weight:700;margin-bottom:.5rem;color:var(--text-1)">No zones yet</div><p style="margin-bottom:1.5rem">Add pricing zones to enable bookings.</p><a href="/pricing/add" class="btn btn-primary">Add First Zone</a></div>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+<script>
+async function calcP(){
+  const zid=document.getElementById('cz').value; if(!zid)return;
+  const h=document.getElementById('ch').value||1;
+  const k=document.getElementById('ck').value||0;
+  const n=document.getElementById('cn').checked?1:0;
+  const p=document.getElementById('cp').checked?1:0;
+  const e=document.getElementById('ce').checked?1:0;
+  const r=await fetch(`/pricing/api/preview?zone_id=${zid}&hours=${h}&km=${k}&night=${n}&peak=${p}&emergency=${e}`);
+  const d=await r.json();
+  document.getElementById('calc-result').style.display='';
+  document.getElementById('r-base').textContent='₹'+d.base;
+  document.getElementById('r-km').textContent='₹'+d.km_cost;
+  document.getElementById('r-hr').textContent='₹'+d.hour_cost;
+  document.getElementById('r-mx').textContent=d.multiplier+'×';
+  document.getElementById('r-tot').textContent='₹'+d.total;
+}
+async function toggleZone(id){ const r=await fetch(`/pricing/${id}/toggle`,{method:'POST'}); if((await r.json()).success) location.reload(); }
+</script>
+{% endblock %}

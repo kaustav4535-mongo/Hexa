@@ -1,0 +1,123 @@
+{% extends "driver/base.html" %}
+{% block title %}Terms & Conditions — E-TukTukGo{% endblock %}
+{% block extra_css %}
+<style>
+.tc-hero{background:linear-gradient(135deg,#0F5132,#1E8449);color:#fff;padding:3.5rem 1.5rem;text-align:center}
+.tc-hero h1{font-size:2rem;font-weight:800;margin-bottom:.4rem}
+.tc-hero .eff{font-size:.78rem;opacity:.65;margin-top:.4rem}
+.wrap{max-width:860px;margin:0 auto;padding:2rem 1.5rem}
+.toc-box,.sec-box,.footer-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.6rem;margin-bottom:1.5rem;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.toc-box h2,.sec-box h2{color:var(--brand);font-size:1.05rem;margin-bottom:.9rem;padding-bottom:.4rem;border-bottom:1.5px solid var(--brand-lt);display:flex;align-items:center;gap:.4rem}
+h3{font-size:.98rem;color:var(--text-1);margin:1.2rem 0 .5rem;font-weight:700}
+p,li{color:var(--text-2);font-size:.9rem;margin-bottom:.7rem;line-height:1.7}
+ul,ol{padding-left:1.5rem;margin-bottom:.8rem}
+li{margin-bottom:.3rem}
+.hi{background:var(--brand-lt);border-left:4px solid var(--brand);border-radius:0 8px 8px 0;padding:.8rem 1rem;margin:1rem 0;font-size:.88rem}
+.warn{background:#FEF9E7;border-left:4px solid #D4AC0D;border-radius:0 8px 8px 0;padding:.8rem 1rem;margin:1rem 0;font-size:.88rem}
+table{width:100%;border-collapse:collapse;margin:1rem 0;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+th{background:#F0F2F5;padding:.6rem .9rem;font-size:.78rem;text-align:left;font-weight:700;color:var(--text-2);border-bottom:1px solid var(--border)}
+td{padding:.6rem .9rem;border-bottom:1px solid var(--border);font-size:.86rem;color:var(--text-2)}
+tr:last-child td{border-bottom:none}
+.toc-box a{color:var(--brand);text-decoration:none;font-size:.86rem}
+.toc-box ol{padding-left:1.3rem}
+.toc-box li{margin-bottom:.3rem}
+/* social in footer */
+.connect-wrap{background:#0A1220;border-radius:16px;padding:2rem;text-align:center;color:#fff;margin:1rem 0}
+.soc-row{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin:.9rem 0}
+.sb{display:inline-flex;align-items:center;gap:.4rem;padding:.48rem 1rem;border-radius:22px;font-size:.8rem;font-weight:700;text-decoration:none;color:#fff;transition:.18s}
+.sb:hover{transform:translateY(-2px);filter:brightness(1.12)}
+.sb-wa{background:#25D366}.sb-gm{background:#EA4335}
+.sb-ig{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)}
+.sb-tw{background:#1DA1F2}
+.call-btn{display:inline-flex;align-items:center;gap:.5rem;background:var(--brand);color:#fff;padding:.6rem 1.5rem;border-radius:24px;font-weight:700;font-size:.9rem;text-decoration:none;margin-top:.6rem;transition:.2s}
+.call-btn:hover{background:#145a32}
+</style>
+{% endblock %}
+{% block content %}
+<div class="tc-hero">
+  <div style="font-size:2.5rem;margin-bottom:.6rem">📜</div>
+  <h1>Terms &amp; Conditions</h1>
+  <p style="opacity:.85;font-size:.9rem">Please read carefully before using E-TukTukGo</p>
+  <div class="eff">Effective: March 25, 2026 · Version 1.0</div>
+</div>
+
+<div class="wrap">
+  <div class="toc-box">
+    <h2>📋 Contents</h2>
+    <ol>
+      <li><a href="#s1">Acceptance of Terms</a></li>
+      <li><a href="#s2">Description of Services</a></li>
+      <li><a href="#s3">User Accounts</a></li>
+      <li><a href="#s4">Customer Terms</a></li>
+      <li><a href="#s5">Driver Terms</a></li>
+      <li><a href="#s6">Payments &amp; Fares</a></li>
+      <li><a href="#s7">Cancellation Policy</a></li>
+      <li><a href="#s8">Privacy &amp; Location Data</a></li>
+      <li><a href="#s9">Prohibited Conduct</a></li>
+      <li><a href="#s10">Limitation of Liability</a></li>
+      <li><a href="#s11">Intellectual Property</a></li>
+      <li><a href="#s12">Termination</a></li>
+      <li><a href="#s13">Governing Law</a></li>
+      <li><a href="#s14">Contact</a></li>
+    </ol>
+  </div>
+
+  <div class="sec-box" id="s1"><h2>1. Acceptance of Terms</h2><p>By accessing or using E-TukTukGo — including the Customer Portal, Driver Portal, and Admin Portal — you agree to be bound by these Terms. If you do not agree, please do not use the Platform.</p><div class="hi">By creating an account, booking a ride, or accepting a ride request, you confirm that you have read, understood, and agreed to these Terms in full.</div></div>
+
+  <div class="sec-box" id="s2"><h2>2. Description of Services</h2><p>E-TukTukGo is a technology platform connecting customers seeking electric TukTuk rides with independent drivers. We are a <strong>technology intermediary</strong> — not a transport company.</p><h3>What We Provide</h3><ul><li>Platform to book and manage electric TukTuk rides</li><li>Live GPS tracking during rides</li><li>Secure online payment processing via Razorpay</li><li>Driver management, approval, and payout processing</li></ul><h3>What We Do Not Provide</h3><ul><li>Direct transportation services</li><li>Insurance for rides (drivers carry their own insurance)</li><li>Guarantees on driver availability or response time</li></ul></div>
+
+  <div class="sec-box" id="s3"><h2>3. User Accounts</h2><ul><li>Must be at least 18 years old to create an account</li><li>Provide accurate, current, and complete information</li><li>Responsible for maintaining security of your password</li><li>Notify us immediately of any unauthorized access</li><li>May not create more than one account per person</li></ul><div class="hi">Passwords are stored as one-way SHA-256 hashes. Google OAuth drivers must complete their profile before accessing the platform.</div></div>
+
+  <div class="sec-box" id="s4"><h2>4. Customer Terms</h2><h3>Booking a Ride</h3><ul><li>Book rides in advance or immediately ("now" booking)</li><li>Provide accurate pickup location — incorrect addresses may result in extra charges</li><li>Maximum range: 40 km from pickup. Minimum: 1 km</li></ul><h3>Payment Lock System</h3><div class="hi">Your payment is <strong>locked</strong> at booking time and only unlocks after a driver accepts. You will not be charged until a driver accepts and you complete payment.</div><h3>Customer Conduct</h3><ul><li>Treat all drivers with respect and courtesy</li><li>Do not ask drivers to violate traffic laws</li><li>Do not bring hazardous materials without prior arrangement</li></ul></div>
+
+  <div class="sec-box" id="s5"><h2>5. Driver Terms</h2><h3>Eligibility</h3><ul><li>Valid driving licence for the vehicle category</li><li>Must own or legally operate the TukTuk</li><li>Vehicle must have valid registration, insurance, and fitness certificate</li><li>At least 21 years of age</li><li>Account must be admin-approved before going online</li></ul><h3>Earnings &amp; Commission</h3><table><tr><th>Item</th><th>Rate</th></tr><tr><td>Driver receives</td><td>80% of each completed fare</td></tr><tr><td>Platform commission</td><td>20% of each completed fare</td></tr><tr><td>Payout method</td><td>UPI or bank transfer (processed by admin)</td></tr><tr><td>Payout frequency</td><td>Weekly or on-request</td></tr></table></div>
+
+  <div class="sec-box" id="s6"><h2>6. Payments &amp; Fares</h2><p>All payments processed securely through Razorpay. We accept UPI, debit/credit cards, and net banking. We do not store card details — handled by Razorpay under PCI-DSS compliance.</p><h3>Refunds</h3><ul><li>Driver cancels after payment: full refund processed</li><li>Cancel before driver accepts (locked): no charge</li><li>Cancel after payment: cancellation fee may apply</li><li>Refunds within 5–7 business days</li></ul></div>
+
+  <div class="sec-box" id="s7"><h2>7. Cancellation Policy</h2><table><tr><th>Scenario</th><th>Charge</th></tr><tr><td>Cancel before driver accepts</td><td>No charge</td></tr><tr><td>Cancel after driver accepts</td><td>~10% of fare</td></tr><tr><td>Driver cancels</td><td>Full refund</td></tr><tr><td>Customer no-show (&gt;15 min)</td><td>Minimum fare charged</td></tr></table><div class="warn">⚠️ More than 5 cancellations per month may result in temporary account suspension.</div></div>
+
+  <div class="sec-box" id="s8"><h2>8. Privacy &amp; Location Data</h2><p>We use device GPS (<code>enableHighAccuracy: true</code>) — no IP-based location. Location data stored only during active rides.</p><h3>Data We Collect</h3><ul><li>Name, email, phone number</li><li>Vehicle number and licence (drivers)</li><li>Booking history and location during rides</li><li>Payment confirmation (not card details)</li></ul><div class="hi">We do not sell, rent, or share your personal data with third parties for marketing purposes.</div></div>
+
+  <div class="sec-box" id="s9"><h2>9. Prohibited Conduct</h2><ul><li>Fake accounts or impersonation</li><li>False information during registration</li><li>Illegal activities on the platform</li><li>Harassment or discrimination</li><li>Hacking or reverse-engineering</li><li>Fraudulent payment claims</li><li>Drivers bypassing platform to avoid commission</li><li>Driving while impaired</li></ul></div>
+
+  <div class="sec-box" id="s10"><h2>10. Limitation of Liability</h2><p>E-TukTukGo is not responsible for driver actions, accidents, delays, loss of belongings, or service interruptions.</p><div class="warn">⚠️ Drivers are independent contractors, not employees of E-TukTukGo.</div></div>
+
+  <div class="sec-box" id="s11"><h2>11. Intellectual Property</h2><p>All platform content — code, design, logos, UI — is the intellectual property of E-TukTukGo and protected under applicable laws. You may not copy, modify, or commercially exploit any part without written permission.</p></div>
+
+  <div class="sec-box" id="s12"><h2>12. Termination</h2><p>E-TukTukGo may suspend or terminate accounts for: Terms violations, fraud, harmful conduct, repeated cancellations, or 12 months inactivity. You may terminate anytime by contacting us.</p></div>
+
+  <div class="sec-box" id="s13"><h2>13. Governing Law</h2><p>These Terms are governed by the laws of India. Disputes are subject to the exclusive jurisdiction of courts in Assam, India.</p></div>
+
+  <div class="sec-box" id="s14"><h2>14. Contact Information</h2>
+    <table>
+      <tr><th>Type</th><th>Details</th></tr>
+      <tr><td>Customer Support</td><td><a href="tel:9395298293">9395298293</a></td></tr>
+      <tr><td>General</td><td>info@etuktukgo.in</td></tr>
+      <tr><td>Driver Support</td><td>drivers@etuktukgo.in</td></tr>
+      <tr><td>Legal</td><td>legal@etuktukgo.in</td></tr>
+      <tr><td>Address</td><td>E-TukTukGo, Jorhat, Assam 785001, India</td></tr>
+    </table>
+    <!-- Social Block -->
+    <div class="connect-wrap" style="margin-top:1.25rem">
+      <div style="font-weight:700;margin-bottom:.2rem">📡 Reach Us</div>
+      <div class="soc-row">
+        <a href="https://wa.me/919395298293" class="sb sb-wa" target="_blank">WhatsApp</a>
+        <a href="mailto:support@etuktukgo.in" class="sb sb-gm">Gmail</a>
+        <a href="https://instagram.com/etuktukgo" class="sb sb-ig" target="_blank">Instagram</a>
+        <a href="https://twitter.com/etuktukgo" class="sb sb-tw" target="_blank">Twitter</a>
+      </div>
+      <a href="tel:9395298293" class="call-btn">📞 9395298293</a>
+    </div>
+  </div>
+
+  <div class="footer-box" style="text-align:center;color:var(--text-3);font-size:.82rem">
+    <div style="font-size:1.5rem;margin-bottom:.4rem">🛺</div>
+    <strong>E-TukTukGo</strong> · Terms &amp; Conditions v1.0 · March 2026<br>
+    <div style="margin-top:.6rem;display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+      <a href="/dashboard/" style="color:var(--brand);text-decoration:none">Home</a>
+      <a href="/about" style="color:var(--brand);text-decoration:none">About Us</a>
+      <a href="/install" style="color:var(--brand);text-decoration:none">Install App</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

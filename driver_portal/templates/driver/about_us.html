@@ -1,0 +1,154 @@
+{% extends "driver/base.html" %}
+{% block title %}About Us — E-TukTukGo{% endblock %}
+{% block extra_css %}
+<style>
+.au-hero{background:linear-gradient(135deg,#06150C 0%,#1E8449 60%,#27AE60 100%);color:#fff;padding:5rem 1.5rem 4rem;text-align:center;position:relative;overflow:hidden}
+.au-hero::before{content:'🛺';position:absolute;font-size:22rem;opacity:.04;top:-4rem;right:-3rem;line-height:1;pointer-events:none}
+.au-hero h1{font-size:clamp(2.2rem,7vw,3.5rem);font-weight:900;margin-bottom:.5rem;position:relative}
+.au-hero .sub{font-size:1rem;opacity:.85;max-width:560px;margin:.5rem auto 0;position:relative}
+.hbadge{display:inline-block;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.28);border-radius:20px;padding:.28rem .85rem;font-size:.78rem;font-weight:600;margin:.3rem .2rem}
+.wrap{max-width:960px;margin:0 auto;padding:2.5rem 1.5rem}
+.sec{margin-bottom:3rem}
+.sec-h{font-size:1.45rem;font-weight:800;color:var(--text-1);margin-bottom:.3rem}
+.sec-bar{width:40px;height:3px;background:var(--brand);border-radius:2px;margin-bottom:1.3rem}
+.m3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1.2rem}
+.mc{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.3rem;text-align:center;transition:.2s}
+.mc:hover{border-color:var(--brand);transform:translateY(-3px);box-shadow:0 8px 24px rgba(30,132,73,.1)}
+.mc .ico{font-size:2.2rem;margin-bottom:.65rem}
+.mc .ttl{font-weight:700;font-size:.92rem;margin-bottom:.3rem}
+.mc .dsc{font-size:.8rem;color:var(--text-3);line-height:1.55}
+.sband{background:linear-gradient(135deg,var(--brand),#145a32);border-radius:18px;padding:2rem;display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;text-align:center;color:#fff;margin:1.5rem 0}
+.sbn{font-size:2rem;font-weight:900}
+.sbl{font-size:.7rem;opacity:.8;text-transform:uppercase;letter-spacing:.05em;margin-top:.15rem}
+.tline{position:relative;padding-left:1.8rem}
+.tline::before{content:'';position:absolute;left:.4rem;top:0;bottom:0;width:2px;background:var(--brand-lt)}
+.ti{position:relative;margin-bottom:1.75rem}
+.tdot{position:absolute;left:-1.4rem;top:.35rem;width:12px;height:12px;border-radius:50%;background:var(--brand);border:2px solid var(--surface)}
+.tph{font-size:.68rem;color:var(--brand);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.12rem}
+.tt{font-weight:700;font-size:.92rem;margin-bottom:.2rem}
+.tb{font-size:.84rem;color:var(--text-3);line-height:1.6}
+.v2{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin-top:1.1rem}
+.vc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.1rem;display:flex;gap:.85rem;align-items:flex-start}
+.vi{width:38px;height:38px;border-radius:9px;background:var(--brand-lt);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+/* ── Social Connect Block ── */
+.connect-wrap{background:#0A1220;border-radius:20px;padding:2.5rem 2rem;margin:2rem 0;text-align:center;color:#fff}
+.connect-title{font-size:1.25rem;font-weight:800;margin-bottom:.3rem}
+.connect-sub{font-size:.83rem;opacity:.6;margin-bottom:1.2rem}
+.soc-row{display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.2rem}
+.sb{display:inline-flex;align-items:center;gap:.45rem;padding:.55rem 1.1rem;border-radius:24px;font-size:.82rem;font-weight:700;text-decoration:none;transition:.18s;color:#fff;border:none;cursor:pointer}
+.sb:hover{transform:translateY(-2px);filter:brightness(1.1)}
+.sb-wa{background:#25D366}.sb-gm{background:#EA4335}
+.sb-ig{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)}
+.sb-tw{background:#1DA1F2}
+.call-wrap{margin-top:.75rem}
+.call-btn{display:inline-flex;align-items:center;gap:.6rem;background:var(--brand);color:#fff;padding:.7rem 1.8rem;border-radius:28px;font-weight:700;font-size:.95rem;text-decoration:none;transition:.2s}
+.call-btn:hover{background:#145a32;transform:translateY(-2px)}
+.addr{margin-top:.9rem;font-size:.75rem;opacity:.45}
+.foot-nav{text-align:center;padding:1.5rem 0;display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;font-size:.84rem}
+.foot-nav a{color:var(--brand);text-decoration:none}
+@media(max-width:700px){.m3,.sband,.v2{grid-template-columns:1fr 1fr}.sband{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.m3{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+{% block content %}
+
+<!-- Hero -->
+<div class="au-hero">
+  <div style="font-size:3rem;margin-bottom:.75rem;position:relative">🛺</div>
+  <h1>About E-TukTukGo</h1>
+  <div class="sub">Clean Electric Mobility · Made in Assam, India 🇮🇳</div>
+  <div style="margin-top:1.1rem">
+    <span class="hbadge">⚡ 100% Electric</span>
+    <span class="hbadge">🌿 Zero Emissions</span>
+    <span class="hbadge">📍 Live GPS</span>
+    <span class="hbadge">🔒 Safe Payments</span>
+    <span class="hbadge">🌐 3 Languages</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- Mission -->
+  <div class="sec">
+    <div class="sec-h">Our Mission</div>
+    <div class="sec-bar"></div>
+    <p style="color:var(--text-2);font-size:.94rem">We built E-TukTukGo with one belief: <strong>clean, affordable transportation should be accessible to everyone.</strong> Electric TukTuks are already part of Assam's streets — we're making them smarter, more reliable, and easier to book for everyone from Jorhat to Dibrugarh.</p>
+    <div class="m3">
+      <div class="mc"><div class="ico">🌿</div><div class="ttl">Clean Mobility</div><div class="dsc">Every ride is 100% electric — zero direct CO₂ for Assam's air.</div></div>
+      <div class="mc"><div class="ico">💰</div><div class="ttl">Driver Prosperity</div><div class="dsc">Drivers keep 80% of every fare. Local operators deserve a fair share.</div></div>
+      <div class="mc"><div class="ico">🛡️</div><div class="ttl">Customer Safety</div><div class="dsc">Live GPS, payment lock, admin-verified drivers, transparent pricing.</div></div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="sband">
+    <div><div class="sbn">3</div><div class="sbl">Portals Built</div></div>
+    <div><div class="sbn">80%</div><div class="sbl">Fare to Driver</div></div>
+    <div><div class="sbn">0g</div><div class="sbl">CO₂ Per Ride</div></div>
+    <div><div class="sbn">∞</div><div class="sbl">Rides Ahead</div></div>
+  </div>
+
+  <!-- Story -->
+  <div class="sec">
+    <div class="sec-h">Our Story</div>
+    <div class="sec-bar"></div>
+    <div class="tline">
+      <div class="ti"><div class="tdot"></div><div class="tph">The Idea</div><div class="tt">Seeing the Gap in Local Mobility</div><div class="tb">Electric TukTuks everywhere in Assam — but no digital platform to book them. Customers couldn't track drivers, couldn't pay safely, and drivers had no professional system.</div></div>
+      <div class="ti"><div class="tdot"></div><div class="tph">Architecture</div><div class="tt">3-Portal Flask System</div><div class="tb">Separate Flask apps for customers (5001), drivers (5002), and admins (5003) — all sharing one clean database module. Built entirely on Termux (Android).</div></div>
+      <div class="ti"><div class="tdot"></div><div class="tph">Innovation</div><div class="tt">Payment Lock System</div><div class="tb">Your money is held until a driver accepts. No charge if no driver. Payment unlocks automatically — no page reload needed.</div></div>
+      <div class="ti"><div class="tdot"></div><div class="tph">Tracking</div><div class="tt">Real GPS, Not Approximation</div><div class="tb">Removed IP-based location (showed wrong city). Switched to pure device GPS — pinpoint accuracy in Jorhat, Golaghat, Sivasagar, Dibrugarh, Tinsukia.</div></div>
+      <div class="ti"><div class="tdot"></div><div class="tph">Today</div><div class="tt">A Complete Platform</div><div class="tb">Live GPS tracking, satellite maps, Razorpay payments, Google OAuth, English + Assamese + Hindi, admin approval workflows, and driver earnings management.</div></div>
+    </div>
+  </div>
+
+  <!-- Values -->
+  <div class="sec">
+    <div class="sec-h">Our Values</div>
+    <div class="sec-bar"></div>
+    <div class="v2">
+      <div class="vc"><div class="vi">🤝</div><div><div style="font-weight:700;font-size:.88rem;margin-bottom:.18rem">Fairness to Drivers</div><div style="font-size:.8rem;color:var(--text-3)">80% of every fare goes to the driver who did the work.</div></div></div>
+      <div class="vc"><div class="vi">🔒</div><div><div style="font-weight:700;font-size:.88rem;margin-bottom:.18rem">Customer Protection</div><div style="font-size:.8rem;color:var(--text-3)">Payment locks prevent charges until a driver accepts.</div></div></div>
+      <div class="vc"><div class="vi">🌿</div><div><div style="font-weight:700;font-size:.88rem;margin-bottom:.18rem">Environment First</div><div style="font-size:.8rem;color:var(--text-3)">100% electric only. Every ride reduces urban pollution.</div></div></div>
+      <div class="vc"><div class="vi">🇮🇳</div><div><div style="font-weight:700;font-size:.88rem;margin-bottom:.18rem">Built for India</div><div style="font-size:.8rem;color:var(--text-3)">UPI payments, Indian addresses, local languages.</div></div></div>
+    </div>
+  </div>
+
+  <!-- Social Connect Block -->
+  <div class="connect-wrap">
+    <div class="connect-title">📡 Connect With Us</div>
+    <div class="connect-sub">Reach us on any platform — we're here to help</div>
+    <div class="soc-row">
+      <a href="https://wa.me/919395298293" class="sb sb-wa" target="_blank" rel="noopener">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a9.416 9.416 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.101.548 4.073 1.504 5.785L.057 23.876l6.337-1.659A11.95 11.95 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.738 9.738 0 0 1-5.007-1.38l-.356-.213-3.705.97.987-3.606-.234-.37A9.751 9.751 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>
+        WhatsApp
+      </a>
+      <a href="mailto:support@etuktukgo.in" class="sb sb-gm">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.364l-6.545-4.636v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L12 9.273l8.073-5.78C21.69 2.28 24 3.434 24 5.457z"/></svg>
+        Gmail
+      </a>
+      <a href="https://instagram.com/etuktukgo" class="sb sb-ig" target="_blank" rel="noopener">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>
+        Instagram
+      </a>
+      <a href="https://twitter.com/etuktukgo" class="sb sb-tw" target="_blank" rel="noopener">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        Twitter / X
+      </a>
+    </div>
+    <div class="call-wrap">
+      <a href="tel:9395298293" class="call-btn">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02z"/></svg>
+        Customer Support: 9395298293
+      </a>
+    </div>
+    <div class="addr">E-TukTukGo · Jorhat, Assam 785001, India</div>
+  </div>
+
+  <div class="foot-nav">
+    <a href="/dashboard/">Home</a>
+    <a href="/terms">Terms & Conditions</a>
+    <a href="/install">Install App</a>
+    <a href="/connect">Contact Us</a>
+  </div>
+</div>
+{% endblock %}

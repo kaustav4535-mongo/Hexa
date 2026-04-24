@@ -1,0 +1,278 @@
+{% extends "customer/base.html" %}
+{% block title %}My Profile — E-TukTukGo{% endblock %}
+
+{% block extra_css %}
+<style>
+  .profile-hero{background:linear-gradient(135deg,var(--brand),var(--brand-dk,#166038));border-radius:var(--radius-lg);padding:2rem;color:#fff;display:flex;align-items:center;gap:1.5rem;margin-bottom:1.5rem;flex-wrap:wrap}
+  .ava-wrap{position:relative;flex-shrink:0}
+  .ava-lg{width:100px;height:100px;border-radius:50%;border:4px solid rgba(255,255,255,.4);overflow:hidden;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:2.5rem;font-weight:800;color:#fff;cursor:pointer;transition:all .2s}
+  .ava-lg:hover{border-color:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.2)}
+  .ava-lg img{width:100%;height:100%;object-fit:cover}
+  .ava-edit-btn{position:absolute;bottom:2px;right:2px;width:28px;height:28px;border-radius:50%;background:#fff;border:2px solid var(--brand);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.75rem;color:var(--brand);transition:all .2s;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+  .ava-edit-btn:hover{background:var(--brand);color:#fff}
+  .upload-progress{display:none;height:4px;border-radius:2px;background:rgba(255,255,255,.3);margin-top:.5rem;overflow:hidden}
+  .upload-progress-bar{height:100%;background:#fff;border-radius:2px;width:0;transition:width .4s ease}
+  .stat-pill{background:rgba(255,255,255,.15);border-radius:10px;padding:.5rem 1rem;text-align:center;min-width:80px}
+  .stat-pill .n{font-size:1.4rem;font-weight:800;font-family:var(--font-h)}
+  .stat-pill .l{font-size:.7rem;opacity:.8;text-transform:uppercase;letter-spacing:.04em}
+  .id-doc-zone{border:2px dashed var(--border);border-radius:var(--radius-md);padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface-2)}
+  .id-doc-zone:hover{border-color:var(--brand);background:var(--brand-lt)}
+  .id-doc-zone.has-doc{border-style:solid;border-color:var(--brand);background:var(--brand-lt)}
+  .doc-type-select{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem}
+  .doc-type-btn{padding:.35rem .85rem;border-radius:20px;border:1.5px solid var(--border);font-size:.78rem;font-weight:600;cursor:pointer;background:var(--surface);color:var(--text-2);transition:all .15s}
+  .doc-type-btn.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-wrap-sm">
+
+  <!-- Profile Hero with avatar upload -->
+  <div class="profile-hero">
+    <div class="ava-wrap">
+      <div class="ava-lg" onclick="document.getElementById('avatar-input').click()" title="Click to change photo">
+        <img id="ava-preview"
+             src="{{ user.avatar or '' }}"
+             style="display:{% if user.avatar %}block{% else %}none{% endif %};width:100%;height:100%;object-fit:cover">
+        <span id="ava-initials" style="display:{% if user.avatar %}none{% else %}block{% endif %}">
+          {{ user.name[0].upper() if user.name else '?' }}
+        </span>
+      </div>
+      <div class="ava-edit-btn" onclick="document.getElementById('avatar-input').click()">
+        <i class="fa fa-camera"></i>
+      </div>
+      <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
+      <div class="upload-progress" id="ava-progress">
+        <div class="upload-progress-bar" id="ava-bar"></div>
+      </div>
+    </div>
+    <div style="flex:1;min-width:0">
+      <div style="font-family:var(--font-h);font-size:1.4rem;font-weight:800;margin-bottom:.2rem">{{ user.name }}</div>
+      <div style="font-size:.85rem;opacity:.8;margin-bottom:.2rem">{{ user.email }}</div>
+      {% if user.phone %}<div style="font-size:.8rem;opacity:.7">📱 {{ user.phone }}</div>{% endif %}
+      <div style="margin-top:.5rem;font-size:.72rem;opacity:.6">
+        {% if user.id_doc_url %}
+          <span style="background:rgba(255,255,255,.2);border-radius:10px;padding:.2rem .6rem">
+            ✓ ID Verified
+          </span>
+        {% else %}
+          <span style="background:rgba(255,255,255,.1);border-radius:10px;padding:.2rem .6rem">
+            ⚠ ID not uploaded
+          </span>
+        {% endif %}
+      </div>
+    </div>
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap">
+      <div class="stat-pill"><div class="n">{{ total_bookings }}</div><div class="l">Bookings</div></div>
+      <div class="stat-pill"><div class="n">{{ completed_rides }}</div><div class="l">Rides</div></div>
+      <div class="stat-pill"><div class="n">₹{{ "%.0f"|format(user.wallet or 0) }}</div><div class="l">Wallet</div></div>
+    </div>
+  </div>
+
+  <!-- Upload tip -->
+  <div id="upload-status" style="display:none;background:var(--brand-lt);border:1px solid var(--brand);border-radius:var(--radius-sm);padding:.6rem 1rem;margin-bottom:1rem;font-size:.85rem;color:var(--brand);display:flex;align-items:center;gap:.5rem">
+    <i class="fa fa-spinner spin"></i> <span id="upload-status-txt">Uploading...</span>
+  </div>
+
+  <!-- Identity Document Upload -->
+  <div class="card card-p fade-up" style="margin-bottom:1.25rem">
+    <div class="card-title"><i class="fa fa-id-card" style="color:var(--brand)"></i> Identity Document</div>
+    <p style="font-size:.84rem;color:var(--text-3);margin-bottom:1rem">
+      Upload a government-issued ID for verification. Accepted: Aadhaar, PAN, Voter ID, Passport.
+    </p>
+
+    <!-- Document type selector -->
+    <div class="doc-type-select" id="doc-type-btns">
+      {% for t,l in [('aadhaar','Aadhaar Card'),('pan','PAN Card'),('voter','Voter ID'),('passport','Passport'),('dl','Driving License')] %}
+      <button class="doc-type-btn {% if user.id_doc_type == t %}active{% endif %}"
+              onclick="selectDocType('{{ t }}',this)">{{ l }}</button>
+      {% endfor %}
+    </div>
+    <input type="hidden" id="selected-doc-type" value="{{ user.id_doc_type or 'aadhaar' }}">
+
+    <!-- Drop zone -->
+    <div class="id-doc-zone {% if user.id_doc_url %}has-doc{% endif %}"
+         id="doc-drop-zone"
+         onclick="document.getElementById('doc-input').click()"
+         ondragover="event.preventDefault();this.style.borderColor='var(--brand)'"
+         ondragleave="this.style.borderColor=''"
+         ondrop="handleDocDrop(event)">
+      {% if user.id_doc_url %}
+        <div style="margin-bottom:.75rem">
+          {% if user.id_doc_url.endswith('.pdf') %}
+            <div style="font-size:2.5rem">📄</div>
+          {% else %}
+            <img src="{{ user.id_doc_url }}" style="max-height:120px;max-width:100%;border-radius:8px;object-fit:contain">
+          {% endif %}
+        </div>
+        <div style="font-size:.8rem;color:var(--brand);font-weight:700">✓ {{ user.id_doc_type|upper if user.id_doc_type else 'Document' }} uploaded</div>
+        <div style="font-size:.73rem;color:var(--text-3);margin-top:.25rem">Click to replace</div>
+      {% else %}
+        <div style="font-size:2.5rem;margin-bottom:.6rem">📤</div>
+        <div style="font-weight:600;font-size:.9rem;margin-bottom:.3rem">Click or drag to upload</div>
+        <div style="font-size:.75rem;color:var(--text-3)">JPG, PNG or PDF · Max 10MB</div>
+      {% endif %}
+    </div>
+    <input type="file" id="doc-input" accept="image/*,.pdf" style="display:none" onchange="uploadIdDoc(this)">
+    <div id="doc-progress" style="display:none;height:4px;border-radius:2px;background:var(--border);margin-top:.6rem;overflow:hidden">
+      <div id="doc-bar" style="height:100%;background:var(--brand);border-radius:2px;width:0;transition:width .4s"></div>
+    </div>
+    <div id="doc-status" style="margin-top:.5rem;font-size:.8rem;color:var(--text-3)"></div>
+  </div>
+
+  <!-- Edit profile -->
+  <div class="card card-p fade-up" style="margin-bottom:1.25rem">
+    <div class="card-title"><i class="fa fa-pen" style="color:var(--text-3)"></i> Edit Profile</div>
+    <form method="POST" action="/profile/edit">
+      <div class="form-group">
+        <label class="form-label">Full Name *</label>
+        <input type="text" name="name" class="form-control" value="{{ user.name }}" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone *</label>
+        <input type="tel" name="phone" class="form-control" value="{{ user.phone or '' }}" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-check"></i> Save Changes</button>
+    </form>
+  </div>
+
+  <!-- Change password -->
+  {% if user.auth_provider != 'google' %}
+  <div class="card card-p fade-up" style="margin-bottom:1.25rem">
+    <div class="card-title"><i class="fa fa-lock" style="color:var(--text-3)"></i> Change Password</div>
+    <form method="POST" action="/profile/change-password">
+      <div class="form-group">
+        <label class="form-label">Current Password</label>
+        <div class="pw-wrap"><input type="password" name="old_password" id="pw-old" class="form-control" placeholder="••••••••" required>
+        <button type="button" class="pw-eye" onclick="togglePw('pw-old',this)" tabindex="-1">👁️</button></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">New Password</label>
+        <div class="pw-wrap"><input type="password" name="new_password" id="pw-new" class="form-control" placeholder="Min 8 characters" minlength="8" required>
+        <button type="button" class="pw-eye" onclick="togglePw('pw-new',this)" tabindex="-1">👁️</button></div>
+      </div>
+      <button type="submit" class="btn btn-secondary btn-sm"><i class="fa fa-key"></i> Update Password</button>
+    </form>
+  </div>
+  {% endif %}
+
+  <a href="/booking/my" class="btn btn-secondary btn-sm"><i class="fa fa-list"></i> My Ride History</a>
+  &nbsp;
+  <a href="/profile/wallet" class="btn btn-secondary btn-sm"><i class="fa fa-wallet"></i> My Wallet</a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var _docType = '{{ user.id_doc_type or "aadhaar" }}';
+
+function selectDocType(type, btn) {
+  _docType = type;
+  document.getElementById('selected-doc-type').value = type;
+  document.querySelectorAll('.doc-type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function showStatus(msg, isError) {
+  var el = document.getElementById('upload-status');
+  var tx = document.getElementById('upload-status-txt');
+  el.style.display = 'flex';
+  tx.textContent = msg;
+  el.style.background = isError ? 'var(--danger-lt,#FDEDEC)' : 'var(--brand-lt)';
+  el.style.borderColor = isError ? 'var(--danger)' : 'var(--brand)';
+  el.style.color = isError ? 'var(--danger)' : 'var(--brand)';
+  el.querySelector('i').className = isError ? 'fa fa-circle-xmark' : 'fa fa-check-circle';
+  if (!isError) setTimeout(() => el.style.display='none', 4000);
+}
+
+async function uploadAvatar(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var prog = document.getElementById('ava-progress');
+  var bar  = document.getElementById('ava-bar');
+  prog.style.display = 'block';
+  // Animate bar
+  var pct = 0;
+  var iv = setInterval(() => { pct = Math.min(pct+8, 85); bar.style.width=pct+'%'; }, 150);
+  showStatus('Uploading profile picture...');
+
+  var fd = new FormData();
+  fd.append('avatar', file);
+  try {
+    var r = await fetch('/profile/upload-avatar', {method:'POST', body:fd});
+    var d = await r.json();
+    clearInterval(iv);
+    bar.style.width = '100%';
+    setTimeout(() => { prog.style.display='none'; bar.style.width='0'; }, 600);
+    if (d.success) {
+      // Update preview
+      var prev = document.getElementById('ava-preview');
+      var ini  = document.getElementById('ava-initials');
+      prev.src = d.url;
+      prev.style.display = 'block';
+      ini.style.display  = 'none';
+      showStatus('Profile picture updated! ✓');
+    } else {
+      showStatus('Upload failed: ' + d.error, true);
+    }
+  } catch(e) {
+    clearInterval(iv);
+    prog.style.display='none';
+    showStatus('Network error. Please try again.', true);
+  }
+}
+
+async function uploadIdDoc(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var prog = document.getElementById('doc-progress');
+  var bar  = document.getElementById('doc-bar');
+  var stat = document.getElementById('doc-status');
+  prog.style.display = 'block';
+  stat.textContent = 'Uploading document...';
+  var pct = 0;
+  var iv = setInterval(() => { pct = Math.min(pct+7, 85); bar.style.width=pct+'%'; }, 200);
+
+  var fd = new FormData();
+  fd.append('id_doc', file);
+  fd.append('id_type', _docType);
+  try {
+    var r = await fetch('/profile/upload-id-doc', {method:'POST', body:fd});
+    var d = await r.json();
+    clearInterval(iv);
+    bar.style.width = '100%';
+    setTimeout(() => { prog.style.display='none'; bar.style.width='0'; }, 600);
+    if (d.success) {
+      stat.textContent = '✓ Document uploaded successfully';
+      stat.style.color = 'var(--brand)';
+      // Update drop zone
+      var zone = document.getElementById('doc-drop-zone');
+      zone.classList.add('has-doc');
+      zone.innerHTML = '<div style="font-size:2rem;margin-bottom:.5rem">✅</div>' +
+        '<div style="font-size:.85rem;font-weight:700;color:var(--brand)">' + _docType.toUpperCase() + ' uploaded successfully</div>' +
+        '<div style="font-size:.73rem;color:var(--text-3);margin-top:.25rem">Click to replace</div>';
+    } else {
+      stat.textContent = '✗ ' + d.error;
+      stat.style.color = 'var(--danger)';
+    }
+  } catch(e) {
+    clearInterval(iv);
+    prog.style.display = 'none';
+    stat.textContent = '✗ Network error. Try again.';
+    stat.style.color = 'var(--danger)';
+  }
+}
+
+function handleDocDrop(e) {
+  e.preventDefault();
+  document.getElementById('doc-drop-zone').style.borderColor = '';
+  var file = e.dataTransfer.files[0];
+  if (!file) return;
+  var dt = new DataTransfer();
+  dt.items.add(file);
+  var inp = document.getElementById('doc-input');
+  inp.files = dt.files;
+  uploadIdDoc(inp);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,162 @@
+{% extends "admin/base.html" %}
+{% block title %}Booking #{{ booking._id[:8].upper() }} — Admin{% endblock %}
+{% block page_title %}Booking Detail{% endblock %}
+
+{% block extra_css %}
+<style>
+  #mini-map { width:100%; height:220px; border-radius:var(--radius-lg); border:1px solid var(--border); overflow:hidden; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ph">
+  <div><div class="ph-title">#{{ booking._id[:8].upper() }}</div><div class="ph-sub">{{ booking.booking_type|capitalize }} · {{ booking.created_at[:16] if booking.created_at else '' }}</div></div>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+    {% if booking.status not in ('completed','cancelled') %}
+    <form method="POST" action="/bookings/{{ booking._id }}/cancel" onsubmit="return confirm('Cancel this booking?')" style="display:inline">
+      <button class="btn btn-danger btn-sm"><i class="fa fa-xmark"></i> Cancel</button>
+    </form>
+    {% endif %}
+    <a href="/bookings/" class="btn btn-secondary btn-sm">← Back</a>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;margin-bottom:1.1rem">
+
+  <!-- Ride Info -->
+  <div class="card card-p">
+    <div class="card-title"><i class="fa fa-route" style="color:var(--info)"></i> Ride Details</div>
+    {% for label,val in [
+      ('Pickup',   booking.pickup_address),
+      ('Drop-off', booking.dropoff_address or '—'),
+      ('Distance', (booking.distance_km|string+'km') if booking.distance_km else '—'),
+      ('Type',     booking.booking_type|capitalize),
+      ('Hours',    booking.hours|string+'h'),
+      ('Fare',     '₹'+("%.2f"|format(booking.fare))),
+      ('Payment',  booking.payment_status|capitalize),
+      ('Status',   booking.status|capitalize),
+    ] %}
+    <div style="display:flex;justify-content:space-between;padding:.38rem 0;border-bottom:1px solid var(--border);font-size:.845rem">
+      <span style="color:var(--text-3)">{{ label }}</span>
+      <span style="font-weight:600;{% if label=='Fare' %}color:var(--brand){% endif %}">{{ val }}</span>
+    </div>
+    {% endfor %}
+    {% if booking.payment_locked %}<div style="margin-top:.75rem;background:var(--warning-lt);border:1px solid var(--warning);border-radius:var(--radius-sm);padding:.6rem .8rem;font-size:.8rem;color:#7D6608"><i class="fa fa-lock"></i> Payment locked — driver hasn't accepted yet</div>{% endif %}
+    {% if booking.notes %}
+    <div style="margin-top:.75rem;background:var(--surface-2);border-radius:var(--radius-sm);padding:.7rem;font-size:.82rem;color:var(--text-2)">📝 {{ booking.notes }}</div>
+    {% endif %}
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:1.1rem">
+    <!-- Customer -->
+    <div class="card card-p">
+      <div class="card-title"><i class="fa fa-user" style="color:var(--purple)"></i> Customer</div>
+      {% if customer %}
+      <div style="font-weight:700;font-size:.9rem">{{ customer.name }}</div>
+      <div style="font-size:.8rem;color:var(--text-3);margin:.15rem 0">{{ customer.email }}</div>
+      {% if customer.phone %}<div style="font-size:.8rem;color:var(--text-3)">📱 {{ customer.phone }}</div>{% endif %}
+      <a href="/users/{{ customer._id }}" class="btn btn-secondary btn-sm" style="margin-top:.7rem">View Profile</a>
+      {% else %}<div style="color:var(--text-3);font-size:.84rem">Customer not found</div>{% endif %}
+    </div>
+
+    <!-- Driver / Assign -->
+    <div class="card card-p">
+      <div class="card-title"><i class="fa fa-id-card" style="color:var(--accent)"></i> Driver</div>
+      {% if driver %}
+      <div style="font-weight:700;font-size:.9rem">{{ driver.name }}</div>
+      <div style="font-size:.8rem;color:var(--text-3)">{{ driver.vehicle_number or '—' }}</div>
+      <a href="/drivers/{{ driver._id }}" class="btn btn-secondary btn-sm" style="margin-top:.7rem">View Driver</a>
+      {% elif booking.status not in ('completed','cancelled') %}
+      <div style="font-size:.82rem;color:var(--text-3);margin-bottom:.75rem">No driver assigned yet.</div>
+      <form method="POST" action="/bookings/{{ booking._id }}/assign-driver">
+        <div class="form-group">
+          <label class="form-label">Assign a Driver</label>
+          <select name="driver_id" class="form-control" required>
+            <option value="">— Select driver —</option>
+            {% for d in available_drivers|default([]) %}
+            <option value="{{ d._id }}">{{ d.name }} · {{ d.vehicle_number or '' }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-user-plus"></i> Assign Driver</button>
+      </form>
+      {% else %}
+      <div style="color:var(--text-3);font-size:.84rem">No driver assigned.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Map (if coordinates available) -->
+{% if booking.pickup_lat and booking.pickup_lng %}
+<div class="card card-p fade-up" style="margin-bottom:1.1rem">
+  <div class="card-title"><i class="fa fa-map-location-dot" style="color:var(--brand)"></i> Pickup / Drop Location</div>
+  <div id="mini-map"></div>
+</div>
+{% endif %}
+
+<!-- Payment Record -->
+{% if payment %}
+<div class="card card-p fade-up">
+  <div class="card-title"><i class="fa fa-receipt" style="color:var(--brand)"></i> Payment Record</div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem;font-size:.845rem">
+    {% for label,val in [('Payment ID',payment.razorpay_payment_id),('Order ID',payment.razorpay_order_id or '—'),('Amount','₹'+("%.2f"|format(payment.amount))),('Status',payment.status|capitalize),('Date',(payment.created_at[:16] if payment.created_at else '—'))] %}
+    <div style="background:var(--surface-2);padding:.7rem;border-radius:var(--radius-md)">
+      <div style="font-size:.65rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.25rem">{{ label }}</div>
+      <div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ val }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+{% if booking.pickup_lat and booking.pickup_lng %}
+<link href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.1.2/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.1.2/dist/maplibre-gl.js"></script>
+<script>
+const maptilerKey = '{{ maptiler_key|default("8DcBKk2W2VGTtOYBBBgk") }}';
+const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+const map = new maplibregl.Map({
+  container: 'mini-map',
+  style: `https://api.maptiler.com/maps/hybrid-v4/style.json?key=${maptilerKey}`,
+  center: [{{ booking.pickup_lng }}, {{ booking.pickup_lat }}],
+  zoom: 13, language: 'en',
+});
+map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+map.on('load', () => {
+  // Pickup marker
+  const pu = document.createElement('div');
+  pu.style.cssText = 'width:30px;height:30px;border-radius:50%;background:#1E8449;border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-size:.9rem;box-shadow:0 2px 8px rgba(0,0,0,.2)';
+  pu.textContent = '📍';
+  new maplibregl.Marker({element:pu}).setLngLat([{{ booking.pickup_lng }}, {{ booking.pickup_lat }}])
+    .setPopup(new maplibregl.Popup({offset:18}).setHTML('<strong>Pickup</strong><br>{{ booking.pickup_address|replace("'","\\'") }}'))
+    .addTo(map);
+
+  {% if booking.dropoff_lat and booking.dropoff_lng %}
+  const dr = document.createElement('div');
+  dr.style.cssText = 'width:30px;height:30px;border-radius:50%;background:#C0392B;border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-size:.9rem;box-shadow:0 2px 8px rgba(0,0,0,.2)';
+  dr.textContent = '🏁';
+  new maplibregl.Marker({element:dr}).setLngLat([{{ booking.dropoff_lng }}, {{ booking.dropoff_lat }}])
+    .setPopup(new maplibregl.Popup({offset:18}).setHTML('<strong>Drop-off</strong><br>{{ booking.dropoff_address|replace("'","\\'") }}'))
+    .addTo(map);
+
+  const bounds = new maplibregl.LngLatBounds(
+    [{{ booking.pickup_lng }}, {{ booking.pickup_lat }}],
+    [{{ booking.dropoff_lng }}, {{ booking.dropoff_lat }}]
+  );
+  map.fitBounds(bounds, {padding:40, maxZoom:15});
+  {% endif %}
+});
+
+// Update map style on theme change
+new MutationObserver(() => {
+  const dk = document.documentElement.getAttribute('data-theme')==='dark';
+  map.setStyle(dk ? `https://api.maptiler.com/maps/streets-v2-dark/style.json?key=${maptilerKey}` : `https://api.maptiler.com/maps/hybrid-v4/style.json?key=${maptilerKey}`);
+}).observe(document.documentElement, {attributes:true, attributeFilter:['data-theme']});
+</script>
+{% endif %}
+{% endblock %}

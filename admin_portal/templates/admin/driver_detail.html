@@ -1,0 +1,130 @@
+{% extends "admin/base.html" %}
+{% block title %}Driver {{ driver.name }} — Admin{% endblock %}
+{% block page_title %}Driver Detail{% endblock %}
+{% block content %}
+<div class="ph">
+  <div><div class="ph-title">{{ driver.name }}</div><div class="ph-sub">{{ driver.email }} · {{ driver.vehicle_number or 'No vehicle' }}</div></div>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+    {% if driver.approval=='pending' %}
+    <form method="POST" action="/drivers/{{ driver._id }}/approve" style="display:inline"><button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-check"></i> Approve</button></form>
+    <form method="POST" action="/drivers/{{ driver._id }}/reject" style="display:inline"><button type="submit" class="btn btn-warning btn-sm"><i class="fa fa-xmark"></i> Reject</button></form>
+    {% elif driver.status=='suspended' %}
+    <form method="POST" action="/drivers/{{ driver._id }}/reinstate" style="display:inline"><button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-rotate-left"></i> Reinstate</button></form>
+    {% elif driver.approval=='approved' %}
+    <form method="POST" action="/drivers/{{ driver._id }}/suspend" style="display:inline" onsubmit="return confirm('Suspend?')"><button type="submit" class="btn btn-danger btn-sm"><i class="fa fa-ban"></i> Suspend</button></form>
+    {% endif %}
+    <a href="/drivers/" class="btn btn-secondary btn-sm">← Back</a>
+  </div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;margin-bottom:1.1rem">
+  <div class="card card-p">
+    <div class="card-title"><i class="fa fa-user" style="color:var(--info)"></i> Profile</div>
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)">
+      <div style="width:56px;height:56px;border-radius:50%;border:2.5px solid var(--brand);overflow:hidden;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0">
+        {% if driver.avatar %}<img src="{{ driver.avatar }}" style="width:100%;height:100%;object-fit:cover">{% else %}🧑{% endif %}
+      </div>
+      <div>
+        <div style="font-family:var(--font-h);font-weight:800;font-size:1rem">{{ driver.name }}</div>
+        <div style="font-size:.8rem;color:var(--text-3)">{{ driver.phone or '—' }}</div>
+        <div style="margin-top:.4rem;display:flex;gap:.4rem">
+          {% if driver.status=='online' %}<span class="badge b-green">Online</span>{% else %}<span class="badge b-muted">Offline</span>{% endif %}
+          {% if driver.approval=='approved' %}<span class="badge b-green">Approved</span>{% elif driver.approval=='pending' %}<span class="badge b-orange">Pending</span>{% else %}<span class="badge b-red">Rejected</span>{% endif %}
+        </div>
+      </div>
+    </div>
+    {% for label,val in [('Email',driver.email),('Vehicle',driver.vehicle_number or '—'),('License',driver.license_no or '—'),('Provider',driver.auth_provider|upper),('Joined',(driver.created_at[:10] if driver.created_at else '—'))] %}
+    <div style="display:flex;justify-content:space-between;padding:.38rem 0;border-bottom:1px solid var(--border);font-size:.845rem">
+      <span style="color:var(--text-3)">{{ label }}</span><span style="font-weight:600">{{ val }}</span>
+    </div>
+    {% endfor %}
+  </div>
+  <div style="display:flex;flex-direction:column;gap:1.1rem">
+    <div class="card card-p">
+      <div class="card-title"><i class="fa fa-chart-simple" style="color:var(--brand)"></i> Performance</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+        {% for label,val,color in [('Total Rides',driver.total_rides or 0,'var(--text-1)'),('Rating',("%.1f"|format(driver.rating or 5.0))+' ⭐','#F59E0B'),('Total Earned','₹'+("%.0f"|format(driver.total_earnings or 0)),'var(--brand)'),('Wallet','₹'+("%.2f"|format(driver.wallet or 0)),'var(--info)')] %}
+        <div style="background:var(--surface-2);border-radius:var(--radius-md);padding:.8rem;text-align:center">
+          <div style="font-family:var(--font-h);font-size:1.2rem;font-weight:800;color:{{ color }}">{{ val }}</div>
+          <div style="font-size:.68rem;color:var(--text-3);margin-top:.15rem">{{ label }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="card card-p">
+      <div class="card-title"><i class="fa fa-wallet" style="color:var(--accent)"></i> Payout</div>
+      <div style="font-size:.845rem;color:var(--text-3);margin-bottom:.75rem">Wallet: <strong style="color:var(--brand)">₹{{ "%.2f"|format(driver.wallet or 0) }}</strong></div>
+      <form method="POST" action="/drivers/{{ driver._id }}/payout" onsubmit="return confirm('Process payout?')">
+        <button type="submit" class="btn btn-primary btn-sm" {% if (driver.wallet or 0)<=0 %}disabled{% endif %}>
+          <i class="fa fa-money-bill-transfer"></i> Process Payout
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+  <!-- Zone Assignment -->
+  <div class="card card-p fade-up" style="margin-bottom:1.1rem">
+    <div class="card-title"><i class="fa fa-map-location-dot" style="color:var(--brand)"></i> Zone Assignment</div>
+    <p style="font-size:.83rem;color:var(--text-3);margin-bottom:.9rem">
+      Assign driver to a home zone. Drivers can also serve additional zones.
+      Home zone gets priority in booking matching.
+    </p>
+    <form method="POST" action="/drivers/{{ driver._id }}/assign-zone">
+      <div class="form-group">
+        <label class="form-label">Home Zone (Primary)</label>
+        <select name="home_zone_id" class="form-control">
+          <option value="">— All Zones (No preference) —</option>
+          {% for z in zones %}
+          <option value="{{ z._id }}" {% if driver.home_zone_id == z._id %}selected{% endif %}>
+            {{ z.name }} {% if z.district %}({{ z.district }}){% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Also Serves (Additional Zones)</label>
+        <div style="display:flex;flex-direction:column;gap:.4rem">
+          {% for z in zones %}
+          <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;cursor:pointer">
+            <input type="checkbox" name="extra_zone_ids" value="{{ z._id }}"
+                   {% if z._id in (driver.served_zone_ids or []) %}checked{% endif %}>
+            {{ z.name }}{% if z.district %} · {{ z.district }}{% endif %}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm">
+        <i class="fa fa-check"></i> Save Zone Assignment
+      </button>
+    </form>
+    {% if driver.home_zone_id %}
+    <div style="margin-top:.9rem;font-size:.8rem;color:var(--text-3)">
+      Current: <strong style="color:var(--brand)">
+        {{ zones|selectattr('_id','eq',driver.home_zone_id)|map(attribute='name')|first|default('Unknown') }}
+      </strong>
+    </div>
+    {% endif %}
+  </div>
+
+<div class="card fade-up">
+  <div class="card-p" style="border-bottom:1px solid var(--border)">
+    <div class="card-title" style="margin-bottom:0"><i class="fa fa-route" style="color:var(--text-3)"></i> Ride History ({{ rides|length }})</div>
+  </div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>ID</th><th>Pickup</th><th>Type</th><th>Fare</th><th>Status</th><th>Date</th></tr></thead>
+      <tbody>
+        {% if rides %}{% for r in rides %}
+        <tr>
+          <td class="td-id">#{{ r._id[:8].upper() }}</td>
+          <td style="font-size:.8rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.pickup_address }}</td>
+          <td><span class="badge b-muted">{{ r.booking_type }}</span></td>
+          <td style="color:var(--brand);font-weight:700">₹{{ "%.0f"|format(r.fare) }}</td>
+          <td>{% if r.status=='completed' %}<span class="badge b-green">Done</span>{% elif r.status=='in_progress' %}<span class="badge b-blue">Active</span>{% elif r.status=='cancelled' %}<span class="badge b-red">Cancelled</span>{% else %}<span class="badge b-muted">{{ r.status }}</span>{% endif %}</td>
+          <td style="font-size:.75rem;color:var(--text-3)">{{ r.created_at[:10] if r.created_at else '—' }}</td>
+        </tr>
+        {% endfor %}{% else %}<tr><td colspan="6" class="empty-cell">No rides yet.</td></tr>{% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

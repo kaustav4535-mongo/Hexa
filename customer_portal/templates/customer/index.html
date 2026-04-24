@@ -1,0 +1,775 @@
+{% extends "customer/base.html" %}
+{% block title %}E-TukTukGo — Book Electric Rides{% endblock %}
+
+{% block extra_css %}
+<!-- MapLibre GL JS — works perfectly with MapTiler style.json -->
+<style>
+  /* ── Hero ── */
+  .hero {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    min-height: calc(100vh - var(--nav-h));
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    overflow: hidden;
+  }
+
+  .hero-left {
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 3rem 3rem 3rem 4rem;
+    position: relative; z-index: 2;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: var(--brand-lt); color: var(--brand);
+    border: 1px solid var(--brand); border-radius: 20px;
+    padding: .3rem .9rem; font-size: .78rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .05em;
+    margin-bottom: 1.25rem; width: fit-content;
+  }
+
+  .hero-title {
+    font-family: var(--font-h);
+    font-size: clamp(2rem, 3.5vw, 2.8rem);
+    font-weight: 800; line-height: 1.15;
+    letter-spacing: -.02em; color: var(--text-1);
+    margin-bottom: .9rem;
+  }
+  .hero-title .hl { color: var(--brand); }
+
+  .hero-sub {
+    font-size: 1rem; color: var(--text-2);
+    line-height: 1.7; max-width: 420px; margin-bottom: 2rem;
+  }
+
+  /* Quick book */
+  .quick-book {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-xl, 24px);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-lg);
+    max-width: 440px;
+  }
+  [data-theme="dark"] .quick-book { background: var(--surface-2); }
+  .quick-book-title {
+    font-family: var(--font-h); font-size: 1rem; font-weight: 700;
+    margin-bottom: 1.2rem;
+  }
+
+  .loc-row { position: relative; margin-bottom: .4rem; }
+  .loc-dot  {
+    position: absolute; left: .85rem; top: 50%; transform: translateY(-50%);
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+  .loc-row input {
+    width: 100%; padding: .7rem 1rem .7rem 2.1rem;
+    background: var(--surface-2); border: 1.5px solid var(--border);
+    border-radius: 12px; font-size: .9rem; color: var(--text-1);
+    outline: none; transition: border-color .18s; font-family: var(--font-b);
+  }
+  .loc-row input:focus { border-color: var(--brand); background: var(--surface); }
+  .loc-row input::placeholder { color: var(--text-3); }
+
+  .suggestions-box {
+    border: 1px solid var(--border); border-radius: 12px;
+    background: var(--surface); box-shadow: var(--shadow-md);
+    max-height: 200px; overflow-y: auto; margin-top: .25rem;
+    position: absolute; left: 0; right: 0; z-index: 300;
+  }
+  .sug-item {
+    padding: .6rem 1rem; cursor: pointer; font-size: .85rem;
+    border-bottom: 1px solid var(--border); transition: background .1s;
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .sug-item:last-child { border-bottom: none; }
+  .sug-item:hover { background: var(--surface-2); }
+
+  /* Hero stats */
+  .hero-stats { display: flex; gap: 2rem; margin-top: 2rem; flex-wrap: wrap; }
+  .h-stat-num { font-family: var(--font-h); font-size: 1.5rem; font-weight: 800; color: var(--text-1); }
+  .h-stat-lbl { font-size: .73rem; color: var(--text-3); margin-top: .1rem; text-transform: uppercase; letter-spacing: .04em; }
+
+  /* Hero right — TukTuk image */
+  .hero-right {
+    position: relative; overflow: hidden;
+    background: linear-gradient(135deg, #fdf0e8 0%, #fde8da 40%, #f5ddd0 100%);
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  [data-theme="dark"] .hero-right {
+    background: linear-gradient(135deg, #1c0f08 0%, #2a1510 60%, #1a1008 100%);
+  }
+  .hero-vehicle-img {
+    width: 90%; max-width: 560px;
+    object-fit: contain;
+    filter: drop-shadow(0 24px 48px rgba(0,0,0,0.18));
+    transition: transform .5s ease;
+    position: relative; z-index: 2;
+    display: block;
+    margin-bottom: -10px;
+  }
+  .hero-vehicle-img:hover { transform: translateY(-8px) scale(1.02); }
+  .hero-right-overlay {
+    position: absolute; top: 0; left: 0; bottom: 0; width: 30%;
+    background: linear-gradient(to right, var(--surface) 0%, transparent 100%);
+    z-index: 3; pointer-events: none;
+  }
+
+  /* Map section */
+  .map-section { padding: 2rem 0; background: var(--bg); }
+  .map-hdr {
+    max-width: 1200px; margin: 0 auto;
+    padding: 0 1.25rem .9rem;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem;
+  }
+  .map-hdr-title { font-family: var(--font-h); font-size: 1.1rem; font-weight: 700; }
+  #map-home {
+    max-width: 1200px; margin: 0 auto; padding: 0 1.25rem;
+  }
+  #map-home-inner {
+    width: 100%; height: 260px;
+    border-radius: 18px; border: 1.5px solid var(--border);
+    box-shadow: var(--shadow-md); overflow: hidden;
+    transition: height .35s ease;
+  }
+  #map-home-inner.expanded { height: 480px; }
+  .map-expand-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: .4rem .85rem;
+    font-size: .8rem; font-weight: 600; cursor: pointer;
+    color: var(--text-2); transition: all .15s;
+    display: flex; align-items: center; gap: .4rem;
+  }
+  .map-expand-btn:hover { background: var(--surface-2); }
+
+  /* Features */
+  .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 1.1rem; margin-top: 2rem; }
+  .feature-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 18px; padding: 1.4rem; box-shadow: var(--shadow-sm);
+    transition: all .2s;
+  }
+  .feature-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--brand); }
+  .feat-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--brand-lt); display: flex; align-items: center; justify-content: center; font-size: 1.25rem; margin-bottom: .9rem; }
+  .feat-name { font-family: var(--font-h); font-weight: 700; font-size: .95rem; margin-bottom: .35rem; }
+  .feat-desc { font-size: .83rem; color: var(--text-2); line-height: 1.6; }
+
+  /* Steps */
+  .steps-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 2rem; margin-top: 2rem; }
+  .step-item { text-align: center; }
+  .step-num { width: 52px; height: 52px; border-radius: 50%; background: var(--brand); color: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--font-h); font-size: 1.2rem; font-weight: 800; margin: 0 auto 1rem; }
+  .step-title { font-family: var(--font-h); font-weight: 700; font-size: .95rem; margin-bottom: .4rem; }
+  .step-desc  { font-size: .83rem; color: var(--text-2); line-height: 1.6; }
+
+  /* Drivers strip */
+  .drivers-row { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: .75rem; margin-top: 1.25rem; }
+  .drivers-row::-webkit-scrollbar { height: 4px; }
+  .drv-card {
+    min-width: 180px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 18px; padding: 1.1rem; text-align: center; flex-shrink: 0;
+    box-shadow: var(--shadow-sm); transition: all .2s;
+  }
+  .drv-card:hover { border-color: var(--brand); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .drv-ava {
+    width: 56px; height: 56px; border-radius: 50%;
+    border: 2px solid var(--brand); margin: 0 auto .6rem;
+    overflow: hidden; background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+  }
+  .drv-ava img { width: 100%; height: 100%; object-fit: cover; }
+  .drv-name   { font-weight: 700; font-size: .88rem; margin-bottom: .2rem; }
+  .drv-rating { color: #F59E0B; font-size: .8rem; margin-bottom: .2rem; }
+  .drv-avail  { font-size: .72rem; color: var(--brand); font-weight: 600; }
+
+  /* CTA banner */
+  .cta-banner {
+    background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dk) 100%);
+    border-radius: 24px; padding: 2.5rem; text-align: center; color: #fff;
+  }
+  .cta-banner h2 { font-family: var(--font-h); font-size: 1.6rem; font-weight: 800; margin-bottom: .6rem; }
+  .cta-banner p  { opacity: .85; margin-bottom: 1.5rem; }
+
+  /* Section labels */
+  .sec-label { font-size: .75rem; font-weight: 700; color: var(--brand); text-transform: uppercase; letter-spacing: .08em; margin-bottom: .5rem; }
+  .sec-title { font-family: var(--font-h); font-size: clamp(1.4rem,2.5vw,2rem); font-weight: 800; margin-bottom: .75rem; }
+  .sec-sub   { color: var(--text-2); line-height: 1.7; margin-bottom: 1.25rem; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero { grid-template-columns: 1fr; min-height: auto; }
+    .hero-right { height: 260px; }
+    .hero-left  { padding: 2rem 1.25rem; }
+    .hero-title { font-size: 1.9rem; }
+    .quick-book { max-width: 100%; }
+    .hero-stats { gap: 1.5rem; }
+    .h-stat-num { font-size: 1.25rem; }
+  }
+
+  /* GPS dot pulse animation */
+  @keyframes gpsPulse {
+    0%,100% { box-shadow: 0 0 0 4px rgba(33,150,243,0.25); }
+    50%      { box-shadow: 0 0 0 8px rgba(33,150,243,0.08); }
+  }
+
+  /* Location status bar */
+  #loc-indicator {
+    display: none; align-items: center; gap: .5rem;
+    background: var(--info-lt); border: 1px solid var(--info);
+    border-radius: 10px; padding: .5rem 1rem;
+    font-size: .82rem; color: var(--info);
+    margin: .5rem 1.25rem 0;
+    max-width: 1200px; margin-left: auto; margin-right: auto;
+  }
+  #loc-error {
+    display: none;
+    background: var(--warning-lt); border: 1px solid var(--warning);
+    border-radius: 10px; padding: .5rem 1rem;
+    font-size: .82rem; color: #7D6608;
+    margin: .5rem 1.25rem 0;
+    max-width: 1200px; margin-left: auto; margin-right: auto;
+  }
+  [data-theme="dark"] #loc-error { color: var(--warning); }
+
+  /* Map style switcher buttons */
+  .map-style-btn {
+    padding: .3rem .75rem; border: none; border-radius: 6px;
+    font-size: .78rem; font-weight: 600; cursor: pointer;
+    background: transparent; color: var(--text-2);
+    transition: all .15s;
+  }
+  .map-style-btn:hover  { background: var(--surface-3); color: var(--text-1); }
+  .map-style-btn.active { background: var(--brand); color: #fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <!-- Left: text + booking form -->
+  <div class="hero-left fade-up">
+    <div class="hero-eyebrow"><i class="fa fa-bolt"></i> 100% Electric · Zero Emissions</div>
+    <h1 class="hero-title">
+      Book your<br>
+      <span class="hl"><span data-i18n="home.title2">electric ride</span></span><br>
+      in seconds.
+    </h1>
+    <p class="hero-sub">
+      Clean, safe, affordable electric TukTuks at your doorstep.
+      Track live, pay securely, earn rewards every ride.
+    </p>
+
+    <!-- Quick Book -->
+    <div class="quick-book">
+      <div class="quick-book-title">🛺 Where are you headed?</div>
+      <form action="/booking/new" method="GET">
+        <div style="position:relative">
+          <div class="loc-row">
+            <div class="loc-dot" style="background:var(--brand)"></div>
+            <input type="text" name="pickup" id="hp-pickup"
+                   placeholder="📍 Enter pickup location..."
+                   autocomplete="off" oninput="hpAutocomplete('pickup',this.value)">
+          </div>
+          <div id="hp-pickup-sug" style="position:absolute;left:0;right:0;top:100%;z-index:300"></div>
+        </div>
+
+        <div style="width:2px;height:10px;background:var(--border-md,#C8D0DC);margin:.2rem 0 .2rem 1.35rem"></div>
+
+        <div style="position:relative">
+          <div class="loc-row">
+            <div class="loc-dot" style="background:var(--danger)"></div>
+            <input type="text" name="dropoff" id="hp-dropoff"
+                   placeholder="🏁 Enter destination... (optional)"
+                   autocomplete="off" oninput="hpAutocomplete('dropoff',this.value)">
+          </div>
+          <div id="hp-dropoff-sug" style="position:absolute;left:0;right:0;top:100%;z-index:300"></div>
+        </div>
+
+        <div style="margin-top:1rem">
+          <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:.8rem">
+            <i class="fa fa-search"></i> Find Available TukTuks
+          </button>
+        </div>
+      </form>
+
+      {% if not session.get('user_id') %}
+      <div class="divider">or</div>
+      <a href="/auth/google" class="btn-google">
+        <img src="https://www.google.com/favicon.ico" alt="G"> Continue with Google
+      </a>
+      {% endif %}
+    </div>
+
+    <!-- Stats strip -->
+    <div class="hero-stats">
+      <div>
+        <div class="h-stat-num" id="stat-drivers">{{ total_drivers }}+</div>
+        <div class="h-stat-lbl">Drivers Online</div>
+      </div>
+      <div style="width:1px;background:var(--border)"></div>
+      <div>
+        <div class="h-stat-num">{{ total_bookings }}+</div>
+        <div class="h-stat-lbl">Rides Done</div>
+      </div>
+      <div style="width:1px;background:var(--border)"></div>
+      <div>
+        <div class="h-stat-num">0g</div>
+        <div class="h-stat-lbl">CO₂ Emitted</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: TukTuk vehicle image -->
+  <div class="hero-right">
+    <div class="hero-right-overlay"></div>
+    <img src="{{ url_for('static', filename='img/tuktuk.jpg') }}"
+         alt="Electric TukTuk" class="hero-vehicle-img"
+         onerror="this.style.display='none'">
+  </div>
+</section>
+
+<!-- ═══ LIVE DRIVER MAP ═══ -->
+<!-- Location status messages -->
+<div id="loc-indicator">
+  <span class="pulse-anim" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--info)"></span>
+  Getting your exact GPS location...
+</div>
+<div id="loc-error"></div>
+
+<section class="map-section">
+  <div class="map-hdr">
+    <div>
+      <div class="map-hdr-title">🗺️ Live Driver Map</div>
+      <div style="font-size:.78rem;color:var(--text-3);margin-top:.15rem;display:flex;align-items:center;gap:.4rem">
+        <span class="pulse-anim" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--brand)"></span>
+        Real-time driver positions — updating every 10s
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+      <!-- Map style switcher -->
+      <div style="display:flex;gap:.3rem;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:.25rem">
+        <button id="btn-satellite" class="map-style-btn active"
+                onclick="switchMapStyle('satellite')"
+                title="Satellite View">
+          🛰️ Satellite
+        </button>
+        <button id="btn-street" class="map-style-btn"
+                onclick="switchMapStyle('street')"
+                title="Street View">
+          🗺️ Street
+        </button>
+      </div>
+      <div style="display:flex;gap:.4rem">
+        <button class="map-expand-btn" onclick="locateMe()" id="locate-btn" title="Go to my location">
+          <i class="fa fa-location-crosshairs"></i> <span data-i18n="home.myLocation">My Location</span>
+        </button>
+        <button class="map-expand-btn" id="expand-btn" onclick="toggleMapSize()">
+          <i class="fa fa-expand" id="expand-icon"></i> Expand
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="map-home" style="padding:0 1.25rem;max-width:1200px;margin:0 auto">
+    <div id="map-home-inner" style="width:100%;height:280px;border-radius:18px;border:1.5px solid var(--border);box-shadow:var(--shadow-md);overflow:hidden;transition:height .35s ease;background:var(--surface-2)"></div>
+    <div style="display:flex;gap:1rem;margin-top:.6rem;flex-wrap:wrap;align-items:center">
+      <span style="display:flex;align-items:center;gap:.4rem;font-size:.75rem;color:var(--text-3)">
+        <span style="width:10px;height:10px;border-radius:50%;background:#1E8449;display:inline-block;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span> TukTuk driver
+      </span>
+      <span style="display:flex;align-items:center;gap:.4rem;font-size:.75rem;color:var(--text-3)">
+        <span style="width:10px;height:10px;border-radius:50%;background:#2196F3;display:inline-block;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span> Your location
+      </span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ AVAILABLE DRIVERS STRIP ═══ -->
+<section style="padding:2rem 0;border-top:1px solid var(--border)">
+  <div class="page-wrap">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem;flex-wrap:wrap;gap:.5rem">
+      <div class="sec-title" style="margin-bottom:0;font-size:1.2rem"><span data-i18n="home.availDrivers">Available Drivers</span></div>
+      <span id="drivers-badge" class="badge badge-success pulse-anim">Loading...</span>
+    </div>
+    <p style="font-size:.82rem;color:var(--text-3);margin-bottom:.25rem">Tap any driver to book directly</p>
+    <div id="drivers-row" class="drivers-row">
+      <div class="drv-card" style="justify-content:center;min-height:120px;align-items:center">
+        <span class="pulse-anim" style="color:var(--text-3);font-size:.85rem">Loading...</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FEATURES ═══ -->
+<section style="padding:3rem 0;background:var(--bg)">
+  <div class="page-wrap">
+    <div class="sec-label">Why Choose Us</div>
+    <h2 class="sec-title">Everything you need,<br>nothing you don't.</h2>
+    <div class="features-grid">
+      {% for icon,name,desc in [
+        ('⚡','100% Electric','Every TukTuk runs on clean energy. Zero emissions, zero guilt.'),
+        ('🔒','Pay After Driver Accepts','Payment unlocks only after a driver accepts. No upfront risk.'),
+        ('🗺️','Live GPS Tracking','Watch your driver move in real time. Accurate ETA always.'),
+        ('💰','Clear Pricing','See exact fare before confirming. No surge, no hidden charges.'),
+        ('🎁','Loyalty Rewards','Earn 1 point per ₹10. Redeem for discounts on future rides.'),
+        ('📅','Advance Booking','Schedule up to 7 days ahead. Perfect for early flights or events.'),
+      ] %}
+      <div class="feature-card">
+        <div class="feat-icon">{{ icon }}</div>
+        <div class="feat-name">{{ name }}</div>
+        <div class="feat-desc">{{ desc }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ═══ HOW IT WORKS ═══ -->
+<section style="padding:3rem 0;background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+  <div class="page-wrap">
+    <div class="sec-label" style="text-align:center">Simple Process</div>
+    <h2 class="sec-title" style="text-align:center;margin-bottom:.5rem">Book in 4 easy steps</h2>
+    <div class="steps-row">
+      {% for num,title,desc in [
+        ('1','Enter Location','Type your pickup or drop a pin on the map.'),
+        ('2','Confirm Booking','Choose ride type, time, and preferred driver.'),
+        ('3','Driver Accepts','A driver accepts — payment unlocks automatically.'),
+        ('4','Pay & Ride','Pay via UPI or card. Track live. Earn loyalty points!'),
+      ] %}
+      <div class="step-item">
+        <div class="step-num">{{ num }}</div>
+        <div class="step-title">{{ title }}</div>
+        <div class="step-desc">{{ desc }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CTA ═══ -->
+{% if not session.get('user_id') %}
+<div class="page-wrap" style="padding-top:3rem;padding-bottom:3rem">
+  <div class="cta-banner fade-up">
+    <h2>Ready to ride clean? 🌿</h2>
+    <p>Join thousands of riders switching to electric TukTuks. Free to sign up.</p>
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+      <a href="/auth/register" class="btn btn-lg" style="background:#fff;color:var(--brand);font-weight:700">Create Free Account</a>
+      <a href="/auth/google" class="btn btn-lg" style="background:rgba(255,255,255,.15);color:#fff;border:1.5px solid rgba(255,255,255,.4)">
+        <img src="https://www.google.com/favicon.ico" width="18" alt="G"> Sign up with Google
+      </a>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+'use strict';
+
+// ── Keys ──────────────────────────────────────────────────────────────────────
+var MT_SAT    = '8DcBKk2W2VGTtOYBBBgk';   // satellite key
+var MT_STREET = 'EKwK8akvOHJ42vwjnWyM';   // street key
+
+var SAT_STYLE    = 'https://api.maptiler.com/maps/hybrid-v4/style.json?key='    + MT_SAT;
+var STREET_STYLE = 'https://api.maptiler.com/maps/streets-v2/style.json?key='   + MT_STREET;
+var DARK_STYLE   = 'https://api.maptiler.com/maps/streets-v2-dark/style.json?key=' + MT_STREET;
+
+// ── State ─────────────────────────────────────────────────────────────────────
+var homeMap       = null;
+var mapExpanded   = false;
+var currentStyle  = 'satellite';   // 'satellite' or 'street'
+var driverMarkers = [];
+var userMarker    = null;
+
+// ── Init map after DOM ready ──────────────────────────────────────────────────
+function initHomeMap() {
+  var container = document.getElementById('map-home-inner');
+  if (!container) return;
+
+  try {
+    homeMap = new maplibregl.Map({
+      container : 'map-home-inner',
+      style     : SAT_STYLE,
+      center    : [73.8567, 18.5204],
+      zoom      : 12,
+      attributionControl: false
+    });
+
+    homeMap.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-right');
+    homeMap.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+
+    homeMap.on('load', function() {
+      autoLocate();
+      loadDriverMarkers();
+      setInterval(loadDriverMarkers, 10000);
+    });
+
+    homeMap.on('error', function(e) {
+      console.warn('Map error:', e.error);
+    });
+
+  } catch(err) {
+    console.error('Map init failed:', err);
+    document.getElementById('map-home-inner').innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#888;font-size:.9rem;background:#f5f5f5">Map unavailable — check internet connection</div>';
+  }
+}
+
+// ── Auto-locate: GPS only (exact location) ──────────────────────────────────
+function autoLocate() {
+  if (!navigator.geolocation) {
+    showLocationError('Geolocation not supported by your browser.');
+    return;
+  }
+
+  // Show a subtle "locating" indicator
+  var indicator = document.getElementById('loc-indicator');
+  if (indicator) indicator.style.display = 'flex';
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      var lat = pos.coords.latitude;
+      var lng = pos.coords.longitude;
+      if (indicator) indicator.style.display = 'none';
+      homeMap.flyTo({ center: [lng, lat], zoom: 14, duration: 1400 });
+      placeUserMarker(lat, lng, pos.coords.accuracy);
+    },
+    function(err) {
+      if (indicator) indicator.style.display = 'none';
+      var msg = 'Location access denied.';
+      if (err.code === 1) msg = 'Please allow location access to see your position on map.';
+      if (err.code === 2) msg = 'Location unavailable. Check GPS settings.';
+      if (err.code === 3) msg = 'Location request timed out.';
+      showLocationError(msg);
+    },
+    {
+      enableHighAccuracy: true,  // use GPS, not IP/WiFi
+      timeout:            12000, // wait up to 12s
+      maximumAge:         0      // never use cached position
+    }
+  );
+}
+
+function showLocationError(msg) {
+  var el = document.getElementById('loc-error');
+  if (el) { el.textContent = '📍 ' + msg; el.style.display = 'block'; }
+}
+
+function placeUserMarker(lat, lng, accuracy) {
+  if (userMarker) userMarker.remove();
+
+  // Pulsing blue GPS dot
+  var el = document.createElement('div');
+  el.style.cssText = [
+    'width:20px','height:20px','border-radius:50%',
+    'background:#2196F3','border:3px solid #fff',
+    'box-shadow:0 0 0 4px rgba(33,150,243,0.25)',
+    'cursor:default','position:relative',
+    'animation:gpsPulse 2s ease-in-out infinite'
+  ].join(';');
+  el.title = 'Your Exact Location';
+
+  var acc = accuracy ? Math.round(accuracy) + 'm accuracy' : 'GPS location';
+  userMarker = new maplibregl.Marker({ element: el })
+    .setLngLat([lng, lat])
+    .setPopup(
+      new maplibregl.Popup({ offset: 18, closeButton: false })
+        .setHTML('<div style="font-family:sans-serif;font-size:.85rem"><strong>📍 Your Location</strong><br><span style="color:#666;font-size:.75rem">' + acc + '</span></div>')
+    )
+    .addTo(homeMap);
+
+  // Auto-open popup briefly
+  userMarker.getPopup() && userMarker.togglePopup();
+  setTimeout(function(){ try{ userMarker.togglePopup(); }catch(e){} }, 3000);
+}
+
+// ── Load driver markers ───────────────────────────────────────────────────────
+function loadDriverMarkers() {
+  fetch('/api/drivers/available')
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      driverMarkers.forEach(function(m){ m.remove(); });
+      driverMarkers = [];
+
+      (data.drivers || []).forEach(function(d) {
+        if (!d.lat || !d.lng || (d.lat === 0 && d.lng === 0)) return;
+        var el = document.createElement('div');
+        el.style.cssText = 'width:34px;height:34px;border-radius:50%;background:#1E8449;border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-size:.95rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3);transition:transform .2s';
+        el.textContent = '🛺';
+        el.title = d.name + ' ⭐' + d.rating;
+        el.onmouseenter = function(){ el.style.transform='scale(1.2)'; };
+        el.onmouseleave = function(){ el.style.transform='scale(1)'; };
+        el.onclick = function(){ window.location.href='/booking/new?driver_id='+d._id; };
+
+        var popup = new maplibregl.Popup({ offset: 20, closeButton: false, maxWidth: '200px' })
+          .setHTML('<div style="font-family:sans-serif;padding:4px"><strong>' + esc(d.name) + '</strong><br><span style="color:#F59E0B">⭐ ' + d.rating + '</span> · ' + esc(d.vehicle || '') + '<br><a href="/booking/new?driver_id=' + d._id + '" style="color:#1E8449;font-weight:600;font-size:.82rem">Book now →</a></div>');
+
+        var marker = new maplibregl.Marker({ element: el })
+          .setLngLat([d.lng, d.lat])
+          .setPopup(popup)
+          .addTo(homeMap);
+        driverMarkers.push(marker);
+      });
+    })
+    .catch(function(){});
+}
+
+// ── Map style switch ──────────────────────────────────────────────────────────
+window.switchMapStyle = function(style) {
+  currentStyle = style;
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  var url;
+  if (style === 'satellite') {
+    url = SAT_STYLE;
+  } else {
+    url = isDark ? DARK_STYLE : STREET_STYLE;
+  }
+  homeMap.setStyle(url);
+
+  // Update button states
+  document.querySelectorAll('.map-style-btn').forEach(function(b){
+    b.classList.remove('active');
+  });
+  var active = document.getElementById('btn-' + style);
+  if (active) active.classList.add('active');
+};
+
+// ── Map expand ────────────────────────────────────────────────────────────────
+window.toggleMapSize = function() {
+  mapExpanded = !mapExpanded;
+  var inner = document.getElementById('map-home-inner');
+  var icon  = document.getElementById('expand-icon');
+  var btn   = document.getElementById('expand-btn');
+  inner.style.height = mapExpanded ? '500px' : '280px';
+  icon.className = mapExpanded ? 'fa fa-compress' : 'fa fa-expand';
+  if (btn) btn.childNodes[btn.childNodes.length-1].textContent = mapExpanded ? ' Collapse' : ' <span data-i18n="home.expand">Expand Map</span>';
+  setTimeout(function(){ if(homeMap) homeMap.resize(); }, 350);
+};
+
+// ── Theme sync ────────────────────────────────────────────────────────────────
+new MutationObserver(function() {
+  if (!homeMap || currentStyle === 'satellite') return;
+  var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  homeMap.setStyle(isDark ? DARK_STYLE : STREET_STYLE);
+}).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+// ── Homepage autocomplete ─────────────────────────────────────────────────────
+var acTimers = {};
+window.hpAutocomplete = function(field, val) {
+  var boxId = 'hp-' + field + '-sug';
+  var box = document.getElementById(boxId);
+  if (!box) return;
+  if (val.length < 3) { box.innerHTML = ''; return; }
+  clearTimeout(acTimers[field]);
+  acTimers[field] = setTimeout(function() {
+    fetch('https://api.maptiler.com/geocoding/' + encodeURIComponent(val) + '.json?key=' + MT_STREET + '&language=en&country=IN&limit=5')
+      .then(function(r){ return r.json(); })
+      .then(function(data) {
+        if (!data.features || !data.features.length) { box.innerHTML = ''; return; }
+        box.innerHTML = '<div class="suggestions-box">' +
+          data.features.map(function(f) {
+            return '<div class="sug-item" onclick="window.pickSug(\'' + field + '\',\'' + escAttr(f.place_name) + '\')">'
+              + '<i class="fa fa-location-dot" style="color:var(--brand);flex-shrink:0"></i> ' + esc(f.place_name) + '</div>';
+          }).join('') + '</div>';
+      })
+      .catch(function(){});
+  }, 320);
+};
+
+window.pickSug = function(field, name) {
+  var input = document.getElementById('hp-' + field);
+  var box   = document.getElementById('hp-' + field + '-sug');
+  if (input) input.value = name;
+  if (box)   box.innerHTML = '';
+};
+
+// ── Drivers strip ─────────────────────────────────────────────────────────────
+function loadDriversStrip() {
+  fetch('/api/drivers/available')
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      var row   = document.getElementById('drivers-row');
+      var badge = document.getElementById('drivers-badge');
+      if (!row) return;
+
+      if (badge) {
+        badge.textContent = data.count + ' online';
+        badge.className = data.count > 0 ? 'badge badge-success' : 'badge badge-muted';
+      }
+
+      if (!data.count) {
+        row.innerHTML = '<div class="drv-card" style="min-width:260px;justify-content:center;align-items:center;flex-direction:column;gap:.5rem;min-height:120px;display:flex"><div style="font-size:2rem">🕐</div><div style="font-size:.85rem;color:var(--text-3);text-align:center">No drivers online right now</div></div>';
+        return;
+      }
+
+      row.innerHTML = data.drivers.map(function(d) {
+        return '<div class="drv-card">'
+          + '<div class="drv-ava">' + (d.avatar ? '<img src="'+esc(d.avatar)+'" alt="">' : '🧑') + '</div>'
+          + '<div class="drv-name">' + esc(d.name) + '</div>'
+          + '<div class="drv-rating">' + '★'.repeat(Math.min(5,Math.round(d.rating||5))) + ' ' + (d.rating||5) + '</div>'
+          + '<div class="drv-avail">● Available</div>'
+          + '<div style="font-size:.72rem;color:var(--text-3);margin:.2rem 0">' + esc(d.vehicle||'') + '</div>'
+          + '<a href="/booking/new?driver_id=' + d._id + '" class="btn btn-primary btn-sm" style="margin-top:.4rem">Book</a>'
+          + '</div>';
+      }).join('');
+    })
+    .catch(function(){});
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function esc(s)     { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escAttr(s) { return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+// ── Close suggestions on outside click ───────────────────────────────────────
+document.addEventListener('click', function(e) {
+  ['hp-pickup','hp-dropoff'].forEach(function(id) {
+    if (!e.target.closest('#'+id) && !e.target.closest('#'+id+'-sug')) {
+      var el = document.getElementById(id+'-sug');
+      if (el) el.innerHTML = '';
+    }
+  });
+});
+
+// ── Locate me button ─────────────────────────────────────────────────────────
+window.locateMe = function() {
+  var btn = document.getElementById('locate-btn');
+  if (btn) { btn.innerHTML = '<i class="fa fa-spinner spin"></i>'; btn.disabled = true; }
+  if (!navigator.geolocation) {
+    alert('Geolocation not supported.');
+    if (btn) { btn.innerHTML = '<i class="fa fa-location-crosshairs"></i> <span data-i18n="home.myLocation">My Location</span>'; btn.disabled = false; }
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      var lat = pos.coords.latitude, lng = pos.coords.longitude;
+      homeMap.flyTo({ center: [lng, lat], zoom: 15, duration: 1000 });
+      placeUserMarker(lat, lng, pos.coords.accuracy);
+      if (btn) { btn.innerHTML = '<i class="fa fa-location-crosshairs"></i> <span data-i18n="home.myLocation">My Location</span>'; btn.disabled = false; }
+    },
+    function(err) {
+      alert('Could not get GPS location. Please allow location access.');
+      if (btn) { btn.innerHTML = '<i class="fa fa-location-crosshairs"></i> <span data-i18n="home.myLocation">My Location</span>'; btn.disabled = false; }
+    },
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+  );
+};
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    initHomeMap();
+    loadDriversStrip();
+    setInterval(loadDriversStrip, 10000);
+  });
+} else {
+  initHomeMap();
+  loadDriversStrip();
+  setInterval(loadDriversStrip, 10000);
+}
+
+})();
+</script>
+{% endblock %}

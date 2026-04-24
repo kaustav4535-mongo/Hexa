@@ -1,0 +1,613 @@
+{% extends "customer/base.html" %}
+{% block title %}Book a Ride — E-TukTukGo{% endblock %}
+
+{% block extra_css %}
+<style>
+  .booking-layout {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 0;
+    height: calc(100vh - var(--nav-h));
+    overflow: hidden;
+  }
+
+  /* ── Left form panel ── */
+  .booking-panel {
+    background: var(--surface); border-right: 1px solid var(--border);
+    overflow-y: auto; padding: 1.5rem;
+    display: flex; flex-direction: column; gap: 1.1rem;
+  }
+  .booking-panel::-webkit-scrollbar { width: 4px; }
+  .panel-title { font-family: var(--font-h); font-size: 1.2rem; font-weight: 800; }
+
+  /* Progress steps */
+  .progress-wrap { display: flex; align-items: center; gap: 0; margin-bottom: .5rem; }
+  .prog-step { display: flex; align-items: center; }
+  .prog-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid var(--border-md); background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: .75rem; font-weight: 700; color: var(--text-3); flex-shrink: 0;
+    transition: all .25s;
+  }
+  .prog-dot.active { border-color: var(--brand); background: var(--brand); color: #fff; }
+  .prog-dot.done   { border-color: var(--brand); background: var(--brand-lt); color: var(--brand); }
+  .prog-line { flex: 1; height: 2px; background: var(--border); min-width: 24px; }
+  .prog-label { font-size: .65rem; color: var(--text-3); text-align: center; margin-top: .2rem; }
+
+  /* Location inputs */
+  .loc-row { position: relative; }
+  .loc-row .dot {
+    position: absolute; left: .85rem; top: 50%; transform: translateY(-50%);
+    width: 10px; height: 10px; border-radius: 50%; z-index: 1;
+  }
+  .loc-row .dot.green { background: var(--brand); }
+  .loc-row .dot.red   { background: var(--danger); }
+  .loc-row input {
+    width: 100%; padding: .72rem 2.6rem .72rem 2.1rem;
+    background: var(--surface-2); border: 1.5px solid var(--border);
+    border-radius: var(--radius-md); font-size: .88rem; color: var(--text-1);
+    outline: none; transition: all .18s; font-family: var(--font-b);
+  }
+  .loc-row input:focus { border-color: var(--brand); background: var(--surface); box-shadow: 0 0 0 3px var(--brand-lt); }
+  .loc-row input::placeholder { color: var(--text-3); }
+  .loc-gps {
+    position: absolute; right: .6rem; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; color: var(--text-3);
+    font-size: .85rem; padding: .3rem; transition: color .15s;
+  }
+  .loc-gps:hover { color: var(--brand); }
+  .loc-connector { width: 2px; height: 12px; background: var(--border-md); margin-left: .95rem; }
+
+  /* Suggestions dropdown */
+  .suggestions-box {
+    border: 1px solid var(--border); border-radius: var(--radius-md);
+    background: var(--surface); box-shadow: var(--shadow-md);
+    max-height: 200px; overflow-y: auto; z-index: 200; position: relative;
+  }
+  .suggestion-item {
+    padding: .6rem 1rem; cursor: pointer; font-size: .85rem;
+    border-bottom: 1px solid var(--border); transition: background .12s;
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .suggestion-item:last-child { border-bottom: none; }
+  .suggestion-item:hover { background: var(--surface-2); }
+
+  /* Booking type cards */
+  .type-options { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .6rem; }
+  .type-opt {
+    border: 2px solid var(--border); border-radius: var(--radius-md);
+    padding: .8rem .5rem; text-align: center; cursor: pointer;
+    transition: all .18s;
+  }
+  .type-opt:hover { border-color: var(--brand); background: var(--brand-lt); }
+  .type-opt.selected { border-color: var(--brand); background: var(--brand-lt); }
+  .type-opt input { display: none; }
+  .type-opt-icon { font-size: 1.3rem; margin-bottom: .3rem; }
+  .type-opt-name { font-size: .78rem; font-weight: 700; color: var(--text-1); }
+  .type-opt-desc { font-size: .65rem; color: var(--text-3); margin-top: .1rem; }
+
+  /* Fare card */
+  .fare-card {
+    background: var(--brand-lt); border: 1.5px solid var(--brand);
+    border-radius: var(--radius-md); padding: 1.1rem;
+  }
+  .fare-row { display: flex; justify-content: space-between; font-size: .83rem; padding: .25rem 0; }
+  .fare-total { border-top: 1px solid var(--brand); padding-top: .5rem; margin-top: .3rem; font-weight: 800; font-size: 1rem; }
+  .fare-total span:last-child { color: var(--brand); font-family: var(--font-h); font-size: 1.2rem; }
+
+  /* ── Right map panel ── */
+  .booking-map-panel { position: relative; }
+  #booking-map { width: 100%; height: 100%; min-height: 400px; }
+
+  .map-mode-btn {
+    position: absolute; bottom: 1rem; right: 1rem; z-index: 10;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-md); padding: .5rem .9rem;
+    font-size: .8rem; font-weight: 600; cursor: pointer; color: var(--text-2);
+    box-shadow: var(--shadow-md); transition: all .15s;
+    display: flex; align-items: center; gap: .4rem;
+  }
+  .map-mode-btn:hover { background: var(--surface-2); }
+
+  /* Distance badge on map */
+  #dist-badge {
+    position: absolute; top: 1rem; left: 50%; transform: translateX(-50%);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: .4rem 1rem; font-size: .82rem; font-weight: 600;
+    box-shadow: var(--shadow-md); z-index: 10; display: none;
+    white-space: nowrap;
+  }
+
+  /* ── Mobile responsive ── */
+  @media (max-width: 900px) {
+    .booking-layout { grid-template-columns: 1fr; height: auto; overflow: visible; }
+    .booking-panel  { border-right: none; border-bottom: 1px solid var(--border); max-height: none; }
+    .booking-map-panel { height: 320px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="booking-layout">
+
+  <!-- ── LEFT: Booking Form ───────────────────────── -->
+  <div class="booking-panel">
+    <div class="panel-title">🛺 Book Your Ride</div>
+
+    <!-- Progress -->
+    <div>
+      <div class="progress-wrap">
+        <div class="prog-step">
+          <div class="prog-dot active" id="pd1">1</div>
+        </div>
+        <div class="prog-line"></div>
+        <div class="prog-step">
+          <div class="prog-dot" id="pd2">2</div>
+        </div>
+        <div class="prog-line"></div>
+        <div class="prog-step">
+          <div class="prog-dot" id="pd3">3</div>
+        </div>
+        <div class="prog-line"></div>
+        <div class="prog-step">
+          <div class="prog-dot" id="pd4">4</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;text-align:center">
+        <div class="prog-label">Location</div>
+        <div class="prog-label">Schedule</div>
+        <div class="prog-label">Zone</div>
+        <div class="prog-label">Confirm</div>
+      </div>
+    </div>
+
+    <form method="POST" id="booking-form">
+      <!-- Hidden geo fields -->
+      <input type="hidden" name="pickup_lat"   id="f-pickup-lat">
+      <input type="hidden" name="pickup_lng"   id="f-pickup-lng">
+      <input type="hidden" name="dropoff_lat"  id="f-dropoff-lat">
+      <input type="hidden" name="dropoff_lng"  id="f-dropoff-lng">
+      <input type="hidden" name="distance_km"  id="f-distance-km" value="0">
+
+      <!-- ── Step 1: Location ── -->
+      <div>
+        <div class="card-title"><i class="fa fa-location-dot" style="color:var(--brand)"></i> Pickup & Drop</div>
+
+        <div class="loc-row" style="margin-bottom:.4rem">
+          <div class="dot green"></div>
+          <input type="text" name="pickup_address" id="pickup-input"
+                 placeholder="Pickup location" required
+                 value="{{ pickup }}" autocomplete="off"
+                 oninput="onAddressInput('pickup', this.value)">
+          <button type="button" class="loc-gps" onclick="getGPS('pickup')" title="Use my location">
+            <i class="fa fa-location-crosshairs"></i>
+          </button>
+        </div>
+        <div id="pickup-suggestions"></div>
+
+        <div class="loc-connector"></div>
+
+        <div class="loc-row" style="margin-top:.4rem">
+          <div class="dot red"></div>
+          <input type="text" name="dropoff_address" id="dropoff-input"
+                 placeholder="Drop location (optional)"
+                 value="{{ dropoff }}" autocomplete="off"
+                 oninput="onAddressInput('dropoff', this.value)">
+          <button type="button" class="loc-gps" onclick="getGPS('dropoff')" title="Drop pin here">
+            <i class="fa fa-map-pin"></i>
+          </button>
+        </div>
+        <div id="dropoff-suggestions"></div>
+      </div>
+
+      <!-- ── Step 2: Type & Time ── -->
+      <div>
+        <div class="card-title"><i class="fa fa-clock" style="color:var(--accent)"></i> Ride Type</div>
+        <div class="type-options">
+          <label class="type-opt selected" onclick="selectType('now', this)">
+            <input type="radio" name="booking_type" value="now" checked>
+            <div class="type-opt-icon">⚡</div>
+            <div class="type-opt-name">Now</div>
+            <div class="type-opt-desc">Instant</div>
+          </label>
+          <label class="type-opt" onclick="selectType('advance', this)">
+            <input type="radio" name="booking_type" value="advance">
+            <div class="type-opt-icon">📅</div>
+            <div class="type-opt-name">Schedule</div>
+            <div class="type-opt-desc">Advance</div>
+          </label>
+          <label class="type-opt" onclick="selectType('hourly', this)">
+            <input type="radio" name="booking_type" value="hourly">
+            <div class="type-opt-icon">🕐</div>
+            <div class="type-opt-name">Hourly</div>
+            <div class="type-opt-desc">Rent</div>
+          </label>
+        </div>
+        <div id="dt-field" style="display:none;margin-top:.75rem">
+          <label class="form-label">Scheduled Date & Time</label>
+          <input type="datetime-local" name="scheduled_datetime" class="form-control">
+        </div>
+        <div style="margin-top:.75rem">
+          <label class="form-label">Hours Needed</label>
+          <input type="number" name="hours" id="hours-input" class="form-control"
+                 value="1" min="1" max="12" oninput="updateFare()">
+        </div>
+      </div>
+
+      <!-- ── Step 3: Zone ── -->
+      <div>
+        <div class="card-title"><i class="fa fa-map" style="color:var(--info)"></i> Service Zone</div>
+        <div id="interzone-warn" style="display:none;background:var(--warning-lt);border:1px solid var(--warning);border-radius:8px;padding:.6rem .9rem;margin-bottom:.6rem;font-size:.82rem;color:#7D6608"><i class="fa fa-triangle-exclamation"></i> Your pickup is outside the selected zone — an inter-zone surcharge applies.</div>
+      <select id="zone-select" name="zone_id" class="form-control" required onchange="updateFare()">
+          <option value="">— Select your area zone —</option>
+          {% for zone in zones %}
+          <option value="{{ zone._id }}"
+                  data-base="{{ zone.base_fare }}"
+                  data-km="{{ zone.per_km_rate }}"
+                  data-hour="{{ zone.per_hour_rate }}"
+                  data-min="{{ zone.minimum_fare }}">
+            {{ zone.name }}{% if zone.district %} · {{ zone.district }}{% endif %} — Base ₹{{ zone.base_fare }}
+          </option>
+          {% endfor %}
+        </select>
+        {% if not zones %}
+        <p class="form-hint" style="color:var(--danger)">No zones configured yet. Contact admin.</p>
+        {% endif %}
+      </div>
+
+      <!-- Driver (optional) -->
+      {% if drivers %}
+      <div>
+        <div class="card-title"><i class="fa fa-user" style="color:var(--text-3)"></i> Preferred Driver <span style="font-weight:400;font-size:.78rem;color:var(--text-3)">(optional)</span></div>
+        <select name="driver_id" class="form-control">
+          <option value="">— Auto-assign nearest driver —</option>
+          {% for d in drivers %}
+          <option value="{{ d._id }}" {% if prefill_driver == d._id %}selected{% endif %}>
+            {{ d.name }} · ⭐{{ d.rating }} · {{ d.vehicle_number or '' }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <!-- Notes -->
+      <div>
+        <label class="form-label">Special Notes</label>
+        <textarea name="notes" class="form-control" rows="2" placeholder="Any special requirements..."></textarea>
+      </div>
+
+      <!-- ── Fare Preview ── -->
+      <div id="fare-preview" style="display:none">
+        <div class="card-title"><i class="fa fa-receipt" style="color:var(--brand)"></i> Fare Estimate</div>
+        <div class="fare-card">
+          <div class="fare-row"><span style="color:var(--text-2)">Base fare</span><span id="fp-base">—</span></div>
+          <div class="fare-row"><span style="color:var(--text-2)">Distance charge</span><span id="fp-km">—</span></div>
+          <div class="fare-row"><span style="color:var(--text-2)">Hourly charge</span><span id="fp-hr">—</span></div>
+          <div class="fare-row fare-total">
+            <span>Total Estimate</span><span id="fp-total">—</span>
+          </div>
+          <div style="margin-top:.5rem;font-size:.72rem;color:var(--text-3)">
+            * Final fare may vary slightly. Payment unlocks after driver accepts.
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Payment Lock Notice ── -->
+      <div style="background:var(--info-lt);border:1px solid var(--info);border-radius:var(--radius-md);padding:1rem;display:flex;gap:.6rem;font-size:.83rem;color:var(--info)">
+        <i class="fa fa-lock" style="margin-top:.1rem;flex-shrink:0"></i>
+        <!-- Info: drivers will quote their price -->
+        <div style="background:var(--info-lt);border:1px solid var(--info);border-radius:10px;padding:.85rem;margin-bottom:.9rem;font-size:.82rem;color:var(--info)">
+          <i class="fa fa-circle-info"></i>
+          <strong>How it works:</strong> Post your ride — nearby drivers will send their price quotes.
+          You choose the best quote. Pay before or after the ride in any amount you prefer.
+          {% if commission is defined %}₹{{ commission|int }} platform fee applies.{% endif %}
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-xl" id="submit-btn">
+        <i class="fa fa-paper-plane"></i> Post Ride — Get Driver Quotes
+      </button>
+    </form>
+  </div>
+
+  <!-- ── RIGHT: Map ──────────────────────────────────── -->
+  <div class="booking-map-panel">
+    <div id="booking-map"></div>
+    <div id="dist-badge"><i class="fa fa-road"></i> <span id="dist-text">—</span></div>
+    <button class="map-mode-btn" onclick="fitMapToBoth()">
+      <i class="fa fa-arrows-to-dot"></i> Fit to Route
+    </button>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const MT_SAT    = '8DcBKk2W2VGTtOYBBBgk';
+const MT_STREET = 'EKwK8akvOHJ42vwjnWyM';
+const MAPTILER_KEY = MT_SAT;
+let map, pickupMarker, dropoffMarker;
+let pickupCoords = null, dropoffCoords = null;
+
+/* ── Map Init ────────────────────────────────────────── */
+function initBookingMap() {
+  
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+  map = new maplibregl.Map({
+    container: 'booking-map',
+    style: 'https://api.maptiler.com/maps/hybrid-v4/style.json?key=' + MT_SAT,
+    zoom: 13,
+    center: [73.8567, 18.5204],
+    language: 'en',
+  });
+  map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+  // Click on map = set pickup or drop
+  map.on('click', async e => {
+    const { lng, lat } = e.lngLat;
+    const addr = await reverseGeocode(lat, lng);
+    const noPickup = !document.getElementById('pickup-input').value.trim();
+    if (noPickup) {
+      setPickupCoords(lat, lng, addr);
+    } else {
+      setDropoffCoords(lat, lng, addr);
+    }
+  });
+
+  // ── Auto-locate: GPS only (exact location) ──────────────────────────────
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      async function(pos) {
+        const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+        map.flyTo({ center: [lng, lat], zoom: 15, duration: 1200 });
+        const addr = await reverseGeocode(lat, lng);
+        setPickupCoords(lat, lng, addr);
+      },
+      function(err) {
+        // GPS denied or unavailable — show message, keep default center
+        console.warn('GPS denied:', err.message);
+        const msg = err.code === 1
+          ? 'Location permission denied. Please allow GPS for accurate pickup.'
+          : 'GPS unavailable. Please enter your pickup address manually.';
+        // Show in pickup input as placeholder hint
+        const input = document.getElementById('pickup-input');
+        if (input) input.placeholder = '⚠️ ' + msg;
+      },
+      {
+        enableHighAccuracy: true,  // real GPS, not WiFi/IP
+        timeout:            15000,
+        maximumAge:         0      // no cached position
+      }
+    );
+  }
+
+  // Theme change → update map style
+  new MutationObserver(() => {
+    const dk = document.documentElement.getAttribute('data-theme')==='dark';
+    const dk = document.documentElement.getAttribute('data-theme')==='dark';
+    map.setStyle(dk ? 'https://api.maptiler.com/maps/streets-v2-dark/style.json?key=' + MT_STREET : 'https://api.maptiler.com/maps/hybrid-v4/style.json?key=' + MT_SAT);
+  }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+}
+
+/* ── Reverse geocode ─────────────────────────────────── */
+async function reverseGeocode(lat, lng) {
+  try {
+    const r = await fetch(`https://api.maptiler.com/geocoding/${lng},${lat}.json?key=${MAPTILER_KEY}&language=en`);
+    const d = await r.json();
+    return d.features?.[0]?.place_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+  } catch { return `${lat.toFixed(4)}, ${lng.toFixed(4)}`; }
+}
+
+/* ── Forward geocode ─────────────────────────────────── */
+async function geocodeAddress(addr) {
+  const r = await fetch(`https://api.maptiler.com/geocoding/${encodeURIComponent(addr)}.json?key=${MAPTILER_KEY}&language=en&country=IN&limit=5`);
+  const d = await r.json();
+  return d.features || [];
+}
+
+/* ── Marker helpers ──────────────────────────────────── */
+function makeMarkerEl(color, emoji) {
+  const el = document.createElement('div');
+  el.style.cssText = `width:34px;height:34px;border-radius:50%;background:${color};border:3px solid #fff;
+    display:flex;align-items:center;justify-content:center;font-size:1rem;
+    box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:grab;`;
+  el.textContent = emoji;
+  return el;
+}
+
+function setPickupCoords(lat, lng, addr) {
+  pickupCoords = [lng, lat];
+  document.getElementById('pickup-input').value  = addr;
+  document.getElementById('f-pickup-lat').value  = lat;
+  document.getElementById('f-pickup-lng').value  = lng;
+  if (pickupMarker) pickupMarker.remove();
+  pickupMarker = new maplibregl.Marker({ element: makeMarkerEl('#1E8449','📍'), draggable: true })
+    .setLngLat([lng, lat]).addTo(map);
+  pickupMarker.on('dragend', async () => {
+    const p = pickupMarker.getLngLat();
+    pickupCoords = [p.lng, p.lat];
+    document.getElementById('f-pickup-lat').value = p.lat;
+    document.getElementById('f-pickup-lng').value = p.lng;
+    document.getElementById('pickup-input').value = await reverseGeocode(p.lat, p.lng);
+    calcDistance();
+  });
+  calcDistance();
+}
+
+function setDropoffCoords(lat, lng, addr) {
+  dropoffCoords = [lng, lat];
+  document.getElementById('dropoff-input').value  = addr;
+  document.getElementById('f-dropoff-lat').value  = lat;
+  document.getElementById('f-dropoff-lng').value  = lng;
+  if (dropoffMarker) dropoffMarker.remove();
+  dropoffMarker = new maplibregl.Marker({ element: makeMarkerEl('#C0392B','🏁'), draggable: true })
+    .setLngLat([lng, lat]).addTo(map);
+  dropoffMarker.on('dragend', async () => {
+    const p = dropoffMarker.getLngLat();
+    dropoffCoords = [p.lng, p.lat];
+    document.getElementById('f-dropoff-lat').value = p.lat;
+    document.getElementById('f-dropoff-lng').value = p.lng;
+    document.getElementById('dropoff-input').value = await reverseGeocode(p.lat, p.lng);
+    calcDistance();
+  });
+  calcDistance();
+  fitMapToBoth();
+}
+
+/* ── Distance (Haversine) ────────────────────────────── */
+function haversineKm(c1, c2) {
+  const R = 6371, toRad = x => x * Math.PI / 180;
+  const dLat = toRad(c2[1] - c1[1]);
+  const dLon = toRad(c2[0] - c1[0]);
+  const a = Math.sin(dLat/2)**2 +
+            Math.cos(toRad(c1[1])) * Math.cos(toRad(c2[1])) * Math.sin(dLon/2)**2;
+  return R * 2 * Math.asin(Math.sqrt(a));
+}
+
+function calcDistance() {
+  if (!pickupCoords || !dropoffCoords) return;
+  const km = haversineKm(pickupCoords, dropoffCoords);
+  document.getElementById('f-distance-km').value = km.toFixed(2);
+  const badge = document.getElementById('dist-badge');
+  const text  = document.getElementById('dist-text');
+  text.textContent = `${km.toFixed(1)} km straight-line distance`;
+  badge.style.display = '';
+  updateFare();
+}
+
+/* ── Fit map to both markers ─────────────────────────── */
+function fitMapToBoth() {
+  if (!pickupCoords || !dropoffCoords) return;
+  const bounds = new maplibregl.LngLatBounds(pickupCoords, pickupCoords);
+  bounds.extend(dropoffCoords);
+  map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
+}
+
+/* ── GPS button ──────────────────────────────────────── */
+function getGPS(type) {
+  if (!navigator.geolocation) {
+    alert('Geolocation not supported by your browser.');
+    return;
+  }
+  const input = document.getElementById(type === 'pickup' ? 'pickup-input' : 'dropoff-input');
+  if (input) input.placeholder = '📡 Getting GPS...';
+
+  navigator.geolocation.getCurrentPosition(
+    async function(pos) {
+      const { latitude: lat, longitude: lng } = pos.coords;
+      const addr = await reverseGeocode(lat, lng);
+      if (type === 'pickup') setPickupCoords(lat, lng, addr);
+      else setDropoffCoords(lat, lng, addr);
+      map.flyTo({ center: [lng, lat], zoom: 15, duration: 800 });
+    },
+    function(err) {
+      if (input) input.placeholder = type === 'pickup' ? 'Enter pickup location' : 'Drop location (optional)';
+      if (err.code === 1) alert('Location permission denied. Please allow GPS access in your browser settings.');
+      else alert('Could not get GPS location. Please enter address manually.');
+    },
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+  );
+}
+
+/* ── Autocomplete ────────────────────────────────────── */
+let acTimers = {};
+async function onAddressInput(type, val) {
+  const boxId = type + '-suggestions';
+  const box   = document.getElementById(boxId);
+  if (val.length < 3) { box.innerHTML = ''; return; }
+  clearTimeout(acTimers[type]);
+  acTimers[type] = setTimeout(async () => {
+    const results = await geocodeAddress(val);
+    if (!results.length) { box.innerHTML = ''; return; }
+    box.className = 'suggestions-box';
+    box.innerHTML = results.map(f => `
+      <div class="suggestion-item"
+           onclick="selectSuggestion('${type}', ${JSON.stringify(f.geometry.coordinates)}, '${f.place_name.replace(/'/g,"\\'")}')">
+        <i class="fa fa-location-dot" style="color:var(--brand);flex-shrink:0"></i>
+        ${f.place_name}
+      </div>
+    `).join('');
+  }, 300);
+}
+
+function selectSuggestion(type, coords, name) {
+  const [lng, lat] = coords;
+  document.getElementById(type + '-suggestions').innerHTML = '';
+  if (type === 'pickup') {
+    setPickupCoords(lat, lng, name);
+    map.setCenter([lng, lat]);
+  } else {
+    setDropoffCoords(lat, lng, name);
+  }
+}
+
+/* ── Booking type toggle ─────────────────────────────── */
+function selectType(type, el) {
+  document.querySelectorAll('.type-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('dt-field').style.display = type === 'advance' ? 'block' : 'none';
+  updateFare();
+}
+
+/* ── Fare update ─────────────────────────────────────── */
+function calcFare() {
+  const sel = document.getElementById('zone-select');
+  if (!sel || !sel.value) return 0;
+  const opt   = sel.options[sel.selectedIndex];
+  if (!opt || !opt.dataset.base) return 0;
+  const base  = parseFloat(opt.dataset.base)  || 0;
+  const perKm = parseFloat(opt.dataset.km)    || 0;
+  const perHr = parseFloat(opt.dataset.hour)  || 0;
+  const minF  = parseFloat(opt.dataset.min)   || 0;
+  const km    = parseFloat(document.getElementById('f-distance-km').value) || 0;
+  const hours = parseFloat(document.getElementById('hours-input').value) || 1;
+  return Math.max(base + perKm * km + perHr * hours, minF);
+}
+
+function updateFare() {
+  const sel   = document.getElementById('zone-select');
+  const opt   = sel.options[sel.selectedIndex];
+  const hours = parseFloat(document.getElementById('hours-input').value) || 1;
+  const km    = parseFloat(document.getElementById('f-distance-km').value) || 0;
+
+  document.getElementById('pd2').classList.toggle('active', true);
+  document.getElementById('pd3').classList.toggle('active', !!opt.value);
+
+  if (!opt || !opt.dataset.base) {
+    document.getElementById('fare-preview').style.display = 'none';
+    return;
+  }
+  const base  = parseFloat(opt.dataset.base)  || 0;
+  const perKm = parseFloat(opt.dataset.km)    || 0;
+  const perHr = parseFloat(opt.dataset.hour)  || 0;
+  const minF  = parseFloat(opt.dataset.min)   || 0;
+  const total = Math.max(base + perKm * km + perHr * hours, minF);
+
+  document.getElementById('fp-base').textContent  = `₹${base}`;
+  document.getElementById('fp-km').textContent    = `₹${(perKm*km).toFixed(2)} (${km.toFixed(1)}km)`;
+  document.getElementById('fp-hr').textContent    = `₹${(perHr*hours).toFixed(2)} (${hours}h)`;
+  document.getElementById('fp-total').textContent = `₹${total.toFixed(2)}`;
+  document.getElementById('fare-preview').style.display = '';
+  document.getElementById('pd3').classList.add('active', 'done');
+  document.getElementById('pd4').classList.add('active');
+
+
+}
+
+/* ── Boot ───────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', initBookingMap);
+
+// Close suggestions on outside click
+document.addEventListener('click', e => {
+  ['pickup-suggestions','dropoff-suggestions'].forEach(id => {
+    if (!e.target.closest(`#${id}`) && !e.target.closest(`#${id.replace('-suggestions','-input')}`)) {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '';
+    }
+  });
+});
+</script>
+{% endblock %}

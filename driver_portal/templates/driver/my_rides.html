@@ -1,0 +1,55 @@
+{% extends "driver/base.html" %}
+{% block title %}My Rides — Driver Hub{% endblock %}
+{% block page_title %}My Rides{% endblock %}
+{% block content %}
+<div style="display:flex;gap:.5rem;margin-bottom:1.25rem;flex-wrap:wrap">
+  {% for label,val in [('All','all'),('In Progress','in_progress'),('Completed','completed'),('Assigned','confirmed'),('Cancelled','cancelled')] %}
+  <button class="btn btn-secondary btn-sm filter-tab" data-f="{{ val }}" onclick="filterRides('{{ val }}',this)">{{ label }}</button>
+  {% endfor %}
+</div>
+{% if bookings %}
+<div style="display:flex;flex-direction:column;gap:.75rem" id="rides-list">
+  {% for b in bookings %}
+  <div class="card" data-status="{{ b.status }}">
+    <div style="padding:1rem;display:grid;grid-template-columns:auto 1fr auto;gap:.9rem;align-items:center">
+      <div style="width:40px;height:40px;border-radius:var(--radius-md);background:var(--brand-lt);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">🛺</div>
+      <div>
+        <div style="font-family:var(--font-h);font-weight:700;font-size:.85rem;color:var(--brand)">#{{ b._id[:8].upper() }}</div>
+        <div style="font-size:.83rem;color:var(--text-2);margin:.1rem 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px">📍 {{ b.pickup_address }}{% if b.dropoff_address %} → {{ b.dropoff_address }}{% endif %}</div>
+        <div style="font-size:.73rem;color:var(--text-3)">{{ b.booking_type|capitalize }} · {{ b.hours }}h{% if b.distance_km %} · {{ b.distance_km }}km{% endif %} · {{ b.created_at[:10] if b.created_at else '' }}</div>
+      </div>
+      <div style="text-align:right">
+        {% set st=b.status %}
+        {% if st=='in_progress' %}<span class="badge badge-info">Active</span>
+        {% elif st=='completed' %}<span class="badge badge-success">Done</span>
+        {% elif st=='confirmed' %}<span class="badge badge-warning">Assigned</span>
+        {% elif st=='cancelled' %}<span class="badge badge-danger">Cancelled</span>
+        {% else %}<span class="badge badge-muted">{{ st }}</span>{% endif %}
+        <div style="font-family:var(--font-h);font-size:1rem;font-weight:800;margin:.3rem 0">₹{{ "%.0f"|format(b.fare) }}</div>
+        {% if b.status=='completed' %}<div style="font-size:.72rem;color:var(--brand)">+₹{{ "%.0f"|format(b.fare*0.8) }} earned</div>{% endif %}
+        <div style="margin-top:.4rem"><a href="/rides/{{ b._id }}" class="btn btn-secondary btn-sm"><span data-i18n="myrides.details">View</span></a></div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div style="text-align:center;padding:5rem 2rem;color:var(--text-3)">
+  <div style="font-size:3rem;margin-bottom:.75rem">🛺</div>
+  <h3 style="font-family:var(--font-h);font-weight:700;margin-bottom:.5rem;color:var(--text-1)"><span data-i18n="myrides.noRides">No rides yet</span></h3>
+  <p>Go online from the dashboard to start accepting rides.</p>
+</div>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+<script>
+function filterRides(val, btn) {
+  document.querySelectorAll('.filter-tab').forEach(t=>t.classList.remove('btn-primary'));
+  btn.classList.add('btn-primary');
+  document.querySelectorAll('#rides-list > div').forEach(el=>{
+    el.style.display = (val==='all'||el.dataset.status===val) ? '' : 'none';
+  });
+}
+document.querySelector('[data-f="all"]').classList.add('btn-primary');
+</script>
+{% endblock %}

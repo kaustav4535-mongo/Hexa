@@ -1,0 +1,208 @@
+{% extends "driver/base.html" %}
+{% block title %}Install App — E-TukTukGo{% endblock %}
+{% block extra_css %}
+<style>
+.inst-hero{background:linear-gradient(135deg,#0A1625 0%,#1E8449 60%,#0A1625 100%);color:#fff;padding:4.5rem 1.5rem 3.5rem;text-align:center;position:relative;overflow:hidden}
+.inst-hero::after{content:'📱';position:absolute;font-size:16rem;opacity:.04;bottom:-3rem;left:-2rem;line-height:1}
+.inst-hero h1{font-size:clamp(2rem,6vw,3rem);font-weight:900;margin-bottom:.6rem;position:relative}
+.inst-hero .sub{opacity:.88;max-width:480px;margin:0 auto;font-size:.97rem;position:relative}
+.wrap{max-width:960px;margin:0 auto;padding:2.5rem 1.5rem}
+.glass{background:rgba(255,255,255,.06);backdrop-filter:blur(16px);border:1px solid rgba(39,174,96,.28);border-radius:22px;padding:2rem;margin:1.5rem 0}
+/* Download section */
+.dl-main{text-align:center;padding:2.5rem 1.5rem}
+.apk-btn{display:inline-flex;align-items:center;gap:.75rem;background:#27AE60;color:#fff;padding:1.1rem 2.5rem;border-radius:50px;font-weight:800;font-size:1.15rem;text-decoration:none;box-shadow:0 10px 30px rgba(39,174,96,.45);transition:.2s;margin:.5rem}
+.apk-btn:hover{background:#1E8449;transform:translateY(-3px);box-shadow:0 14px 36px rgba(39,174,96,.55)}
+.share-btn{display:inline-flex;align-items:center;gap:.6rem;background:transparent;border:2px solid rgba(255,255,255,.35);color:#fff;padding:.9rem 2rem;border-radius:50px;font-weight:700;font-size:.95rem;text-decoration:none;transition:.2s;margin:.5rem;cursor:pointer}
+.share-btn:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.6)}
+.gplay-btn{display:inline-flex;align-items:center;gap:.6rem;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);padding:.9rem 2rem;border-radius:50px;font-weight:700;font-size:.95rem;text-decoration:none;margin:.5rem}
+/* Steps */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1.2rem;margin:1.5rem 0}
+.step{background:rgba(255,255,255,.08);border-radius:16px;padding:1.3rem;text-align:center}
+.step-n{width:38px;height:38px;border-radius:50%;background:var(--brand);color:#fff;font-weight:800;font-size:1rem;display:flex;align-items:center;justify-content:center;margin:0 auto .75rem}
+/* Features grid */
+.feat3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:1.5rem 0}
+.fcard{background:rgba(255,255,255,.06);border-radius:14px;padding:1.2rem}
+/* Share row */
+.share-row{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin:1rem 0}
+.sr-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1rem;border-radius:22px;font-size:.8rem;font-weight:700;text-decoration:none;color:#fff;transition:.18s;cursor:pointer;border:none}
+.sr-btn:hover{transform:translateY(-2px);filter:brightness(1.12)}
+.sr-wa{background:#25D366}.sr-tg{background:#2CA5E0}.sr-cp{background:#555}
+.sr-gm{background:#EA4335}
+/* Social Connect */
+.connect-dark{background:#060D18;border-radius:18px;padding:2.2rem 1.5rem;text-align:center;color:#fff;margin-top:2rem}
+.soc-row{display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin:.9rem 0}
+.sb{display:inline-flex;align-items:center;gap:.4rem;padding:.48rem 1rem;border-radius:22px;font-size:.8rem;font-weight:700;text-decoration:none;color:#fff;transition:.18s}
+.sb:hover{transform:translateY(-2px);filter:brightness(1.1)}
+.sb-wa{background:#25D366}.sb-gm{background:#EA4335}
+.sb-ig{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)}
+.sb-tw{background:#1DA1F2}
+.call-btn{display:inline-flex;align-items:center;gap:.5rem;background:var(--brand);color:#fff;padding:.62rem 1.6rem;border-radius:24px;font-weight:700;font-size:.9rem;text-decoration:none;margin-top:.6rem;transition:.2s}
+.call-btn:hover{background:#145a32}
+@media(max-width:640px){.feat3,.steps{grid-template-columns:1fr 1fr}}
+@media(max-width:420px){.feat3{grid-template-columns:1fr}}
+</style>
+{% endblock %}
+{% block content %}
+<!-- Hero -->
+<div class="inst-hero">
+  <div style="font-size:3.5rem;margin-bottom:.9rem;position:relative">🛺📱</div>
+  <h1>Install E-TukTukGo App</h1>
+  <div class="sub">Get the fastest, smoothest experience for booking or driving electric TukTuks in Assam and beyond.</div>
+</div>
+
+<div class="wrap">
+
+  <!-- Main Download Card -->
+  <div class="glass dl-main" style="color:#fff">
+    <h2 style="color:#27AE60;margin-bottom:.75rem;font-size:1.4rem">⬇️ Download Android App</h2>
+    <p style="opacity:.85;margin-bottom:1.5rem">Available for <strong>Customers</strong> and <strong>Drivers</strong> — same APK, choose role at login.</p>
+
+    <div>
+      <a href="https://www.dropbox.com/scl/fi/1pf1njijxyoiees4v3dls/app-apk-69cba466919f3-1774953574.apk?rlkey=fxulvklh04fu1i36bo5mvuu4q&st=i1p20ny6&dl=1"
+         class="apk-btn" id="apk-dl-btn">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14zM12 9l-4 4h3v4h2v-4h3z"/></svg>
+        Download APK Now
+      </a>
+    </div>
+
+    <div style="margin:.75rem 0">
+      <button class="share-btn" onclick="shareApp()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+        Share App Link
+      </button>
+      <a href="#" class="gplay-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.76c.37.21.83.19 1.24-.04l14.2-8.3-3.07-3.07-12.37 11.41zM.79 1.65C.3 2.1 0 2.82 0 3.79v16.42c0 .97.3 1.69.79 2.14L.9 22.44 13.31 10 .9 -2.44.79 1.65zm20.77 8.63-3.16-1.85-3.44 3.44 3.44 3.44 3.19-1.86c.91-.53.91-1.63 0-2.17zm-19.22-8.3 12.37 11.41 3.07-3.07-14.2-8.3c-.41-.23-.87-.25-1.24-.04z"/></svg>
+        Google Play (Coming Soon)
+      </a>
+    </div>
+
+    <!-- Share options -->
+    <div id="share-panel" style="display:none;margin-top:1rem">
+      <div style="font-size:.82rem;opacity:.7;margin-bottom:.6rem">Share via:</div>
+      <div class="share-row">
+        <a href="https://wa.me/?text=Download%20E-TukTukGo%20App%20%F0%9F%9B%BA%20-%20Book%20electric%20TukTuk%20rides%20in%20Assam!%20https%3A%2F%2Fwww.dropbox.com%2Fscl%2Ffi%2F1pf1njijxyoiees4v3dls%2Fapp-apk-69cba466919f3-1774953574.apk%3Frlkey%3Dfxulvklh04fu1i36bo5mvuu4q%26st%3Di1p20ny6%26dl%3D0"
+           class="sr-btn sr-wa" target="_blank">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a9.416 9.416 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.101.548 4.073 1.504 5.785L.057 23.876l6.337-1.659A11.95 11.95 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.738 9.738 0 0 1-5.007-1.38l-.356-.213-3.705.97.987-3.606-.234-.37A9.751 9.751 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>
+          WhatsApp
+        </a>
+        <a href="tg://msg?text=Download%20E-TukTukGo%20App%20%F0%9F%9B%BA%20https%3A%2F%2Fwww.dropbox.com%2Fscl%2Ffi%2F1pf1njijxyoiees4v3dls%2Fapp-apk-69cba466919f3-1774953574.apk%3Frlkey%3Dfxulvklh04fu1i36bo5mvuu4q%26st%3Di1p20ny6%26dl%3D0"
+           class="sr-btn sr-tg">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z"/></svg>
+          Telegram
+        </a>
+        <a href="mailto:?subject=Install%20E-TukTukGo&body=Download%20E-TukTukGo%20electric%20TukTuk%20app%3A%20https%3A%2F%2Fwww.dropbox.com%2Fscl%2Ffi%2F1pf1njijxyoiees4v3dls%2Fapp-apk-69cba466919f3-1774953574.apk%3Frlkey%3Dfxulvklh04fu1i36bo5mvuu4q%26st%3Di1p20ny6%26dl%3D0"
+           class="sr-btn sr-gm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.364l-6.545-4.636v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L12 9.273l8.073-5.78C21.69 2.28 24 3.434 24 5.457z"/></svg>
+          Email
+        </a>
+        <button onclick="copyLink()" class="sr-btn sr-cp">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+          <span id="copy-txt">Copy Link</span>
+        </button>
+      </div>
+    </div>
+
+    <p style="font-size:.78rem;opacity:.6;margin-top:.75rem">APK Direct Download · Secure & Verified · v1.0</p>
+  </div>
+
+  <!-- Installation Steps -->
+  <div class="glass" style="color:#fff">
+    <h3 style="color:#27AE60;margin-bottom:1rem;font-size:1.1rem">📋 How to Install (Android)</h3>
+    <div class="steps">
+      <div class="step"><div class="step-n">1</div><div style="font-weight:700;margin-bottom:.3rem">Download APK</div><div style="font-size:.8rem;opacity:.8">Tap the green button above to download the APK file</div></div>
+      <div class="step"><div class="step-n">2</div><div style="font-weight:700;margin-bottom:.3rem">Allow Unknown Sources</div><div style="font-size:.8rem;opacity:.8">Settings → Security → Install unknown apps → Allow</div></div>
+      <div class="step"><div class="step-n">3</div><div style="font-weight:700;margin-bottom:.3rem">Open APK File</div><div style="font-size:.8rem;opacity:.8">Go to Downloads → tap the APK file → Install</div></div>
+      <div class="step"><div class="step-n">4</div><div style="font-weight:700;margin-bottom:.3rem">Login & Ride!</div><div style="font-size:.8rem;opacity:.8">Open app → login as Customer or Driver → start booking</div></div>
+    </div>
+  </div>
+
+  <!-- App Variants -->
+  <div class="feat3">
+    <div class="fcard" style="color:#fff">
+      <div style="font-size:2rem;margin-bottom:.6rem">👤</div>
+      <div style="font-weight:700;color:#27AE60;margin-bottom:.5rem">Customer App</div>
+      <ul style="font-size:.82rem;opacity:.85;padding-left:1.2rem">
+        <li>Book rides instantly</li>
+        <li>Live GPS tracking</li>
+        <li>Razorpay payments</li>
+        <li>Loyalty points</li>
+      </ul>
+    </div>
+    <div class="fcard" style="color:#fff">
+      <div style="font-size:2rem;margin-bottom:.6rem">🛺</div>
+      <div style="font-weight:700;color:#27AE60;margin-bottom:.5rem">Driver App</div>
+      <ul style="font-size:.82rem;opacity:.85;padding-left:1.2rem">
+        <li>Accept ride requests</li>
+        <li>Live navigation</li>
+        <li>80% fare earnings</li>
+        <li>Weekly payouts</li>
+      </ul>
+    </div>
+    <div class="fcard" style="color:#fff">
+      <div style="font-size:2rem;margin-bottom:.6rem">⚡</div>
+      <div style="font-weight:700;color:#27AE60;margin-bottom:.5rem">Why App?</div>
+      <ul style="font-size:.82rem;opacity:.85;padding-left:1.2rem">
+        <li>Faster than browser</li>
+        <li>Works offline partly</li>
+        <li>Push notifications</li>
+        <li>Better GPS accuracy</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Social / Support -->
+  <div class="connect-dark">
+    <div style="font-weight:700;font-size:1rem;margin-bottom:.2rem">📞 Need Help Installing?</div>
+    <div style="font-size:.82rem;opacity:.6;margin-bottom:.9rem">Contact us — we'll guide you step by step</div>
+    <div class="soc-row">
+      <a href="https://wa.me/919395298293?text=Help%20me%20install%20E-TukTukGo%20app" class="sb sb-wa" target="_blank">WhatsApp</a>
+      <a href="mailto:support@etuktukgo.in" class="sb sb-gm">Gmail</a>
+      <a href="https://instagram.com/etuktukgo" class="sb sb-ig" target="_blank">Instagram</a>
+      <a href="https://twitter.com/etuktukgo" class="sb sb-tw" target="_blank">Twitter</a>
+    </div>
+    <a href="tel:9395298293" class="call-btn">📞 Call: 9395298293</a>
+    <div style="font-size:.72rem;opacity:.4;margin-top:.75rem">E-TukTukGo · Jorhat, Assam</div>
+  </div>
+
+  <div style="text-align:center;padding:1.25rem 0;display:flex;gap:1.25rem;justify-content:center;flex-wrap:wrap;font-size:.83rem">
+    <a href="/dashboard/" style="color:var(--brand);text-decoration:none">Home</a>
+    <a href="/about" style="color:var(--brand);text-decoration:none">About Us</a>
+    <a href="/terms" style="color:var(--brand);text-decoration:none">Terms & Conditions</a>
+    <a href="/connect" style="color:var(--brand);text-decoration:none">Contact</a>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+var APK_URL = 'https://www.dropbox.com/scl/fi/1pf1njijxyoiees4v3dls/app-apk-69cba466919f3-1774953574.apk?rlkey=fxulvklh04fu1i36bo5mvuu4q&st=i1p20ny6&dl=0';
+
+function shareApp() {
+  var panel = document.getElementById('share-panel');
+  if (navigator.share) {
+    navigator.share({
+      title: 'E-TukTukGo — Electric TukTuk App',
+      text: 'Book electric TukTuk rides in Assam! Download the app:',
+      url: APK_URL
+    }).catch(function(){});
+    return;
+  }
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(APK_URL).then(function() {
+    document.getElementById('copy-txt').textContent = '✓ Copied!';
+    setTimeout(function(){ document.getElementById('copy-txt').textContent = 'Copy Link'; }, 2000);
+  }).catch(function() {
+    var ta = document.createElement('textarea');
+    ta.value = APK_URL;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    document.getElementById('copy-txt').textContent = '✓ Copied!';
+    setTimeout(function(){ document.getElementById('copy-txt').textContent = 'Copy Link'; }, 2000);
+  });
+}
+</script>
+{% endblock %}

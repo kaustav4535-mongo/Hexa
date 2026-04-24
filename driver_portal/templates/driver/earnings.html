@@ -1,0 +1,58 @@
+{% extends "driver/base.html" %}
+{% block title %}Earnings — Driver Hub{% endblock %}
+{% block page_title %}Earnings{% endblock %}
+{% block content %}
+<div style="background:linear-gradient(135deg,var(--brand),var(--brand-dk));border-radius:var(--radius-lg);padding:2rem;text-align:center;color:#fff;margin-bottom:1.5rem">
+  <div style="font-size:.75rem;opacity:.8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem">Total All-Time Earnings</div>
+  <div style="font-family:var(--font-h);font-size:3rem;font-weight:800">₹{{ "%.2f"|format(total_earn) }}</div>
+  <div style="opacity:.75;font-size:.83rem;margin-top:.3rem">After 20% platform commission</div>
+  <div style="display:flex;gap:2rem;justify-content:center;margin-top:1.25rem;flex-wrap:wrap">
+    <div><div style="font-family:var(--font-h);font-size:1.4rem;font-weight:800">{{ driver.total_rides or 0 }}</div><div style="font-size:.72rem;opacity:.8">Rides</div></div>
+    <div style="width:1px;background:rgba(255,255,255,.3)"></div>
+    <div><div style="font-family:var(--font-h);font-size:1.4rem;font-weight:800">₹{{ "%.0f"|format(driver.wallet or 0) }}</div><div style="font-size:.72rem;opacity:.8">Wallet</div></div>
+    <div style="width:1px;background:rgba(255,255,255,.3)"></div>
+    <div><div style="font-family:var(--font-h);font-size:1.4rem;font-weight:800">{{ "%.1f"|format(driver.rating or 5.0) }} ⭐</div><div style="font-size:.72rem;opacity:.8">Rating</div></div>
+  </div>
+</div>
+<div style="display:flex;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap">
+  <a href="/earnings/bank-details" class="btn btn-primary"><i class="fa fa-money-bill-transfer"></i> <span data-i18n="earn.withdraw">Withdraw Money</span></a>
+  <a href="/earnings/bank-details" class="btn btn-secondary btn-sm"><i class="fa fa-building-columns"></i> <span data-i18n="earn.bankSettings">Bank / UPI Settings</span></a>
+</div>
+{% if weekly %}
+<div class="card card-p" style="margin-bottom:1.25rem">
+  <div class="card-title"><i class="fa fa-chart-bar" style="color:var(--brand)"></i> <span data-i18n="earn.last7">Last 7 Days</span></div>
+  {% set max_val = weekly|map(attribute=1)|max %}
+  <div style="display:flex;align-items:flex-end;gap:.5rem;height:100px">
+    {% for day,amount in weekly %}
+    {% set pct = ((amount/max_val)*100) if max_val>0 else 0 %}
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:.25rem">
+      <div style="width:100%;border-radius:4px 4px 0 0;background:var(--brand);height:{{ pct }}%;min-height:3px;transition:height .5s ease" title="₹{{ amount|int }}"></div>
+      <div style="font-size:.62rem;color:var(--text-3)">{{ day[5:] }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+<div class="card">
+  <div class="card-p" style="border-bottom:1px solid var(--border)"><div class="card-title" style="margin-bottom:0"><span data-i18n="earn.completed">Completed Rides</span></div></div>
+  {% if bookings %}
+  <div class="table-wrap"><table><thead><tr><th>ID</th><th>Pickup</th><th>Fare</th><th>Your Cut</th><th>Date</th></tr></thead><tbody>
+  {% for b in bookings[:20] %}
+  <tr>
+    <td style="font-family:var(--font-h);font-size:.82rem;color:var(--brand)">#{{ b._id[:8].upper() }}</td>
+    <td style="font-size:.82rem;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ b.pickup_address }}</td>
+    <td style="font-size:.85rem">₹{{ "%.0f"|format(b.fare) }}</td>
+    <td style="color:var(--brand);font-weight:700">+₹{{ "%.0f"|format(b.fare*0.8) }}</td>
+    <td style="font-size:.78rem;color:var(--text-3)">{{ b.created_at[:10] if b.created_at else '—' }}</td>
+  </tr>
+  {% endfor %}
+  </tbody></table></div>
+  {% else %}
+  <div style="text-align:center;padding:2.5rem;color:var(--text-3);font-size:.87rem">No completed rides yet.</div>
+  {% endif %}
+</div>
+<div style="background:var(--warning-lt);border:1px solid var(--warning);border-radius:var(--radius-md);padding:.9rem 1.1rem;font-size:.82rem;color:#7D6608;margin-top:1rem;display:flex;gap:.6rem">
+  <i class="fa fa-circle-info"></i>
+  <span>You receive <strong>80%</strong> of each fare. Payouts are processed weekly by admin via Razorpay.</span>
+</div>
+{% endblock %}

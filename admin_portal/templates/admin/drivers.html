@@ -1,0 +1,92 @@
+{% extends "admin/base.html" %}
+{% block title %}Drivers — Admin{% endblock %}
+{% block page_title %}Driver Management{% endblock %}
+{% block content %}
+<div class="ph">
+  <div><div class="ph-title">Drivers</div><div class="ph-sub">{{ drivers|length }} found</div></div>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+    <button class="btn btn-primary btn-sm" id="bulk-btn" style="display:none" onclick="bulkApprove()"><i class="fa fa-check"></i> Approve Selected</button>
+    <a href="/drivers/?approval=pending" class="btn btn-warning btn-sm">⏳ Pending Only</a>
+  </div>
+</div>
+<div class="card card-p fade-up" style="margin-bottom:1.1rem">
+  <form method="GET" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+    <div style="flex:1;min-width:200px" class="search-wrap">
+      <i class="fa fa-search search-icon"></i>
+      <input type="text" name="q" class="form-control" placeholder="Name, email, vehicle..." value="{{ search }}">
+    </div>
+    <select name="approval" class="form-control" style="width:auto">
+      <option value="">All Approvals</option>
+      {% for v,l in [('pending','Pending'),('approved','Approved'),('rejected','Rejected')] %}
+      <option value="{{ v }}" {% if approval_filter==v %}selected{% endif %}>{{ l }}</option>
+      {% endfor %}
+    </select>
+    <select name="status" class="form-control" style="width:auto">
+      <option value="">All Status</option>
+      {% for v,l in [('online','Online'),('offline','Offline'),('suspended','Suspended')] %}
+      <option value="{{ v }}" {% if status_filter==v %}selected{% endif %}>{{ l }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-secondary btn-sm"><i class="fa fa-filter"></i></button>
+    <a href="/drivers/" class="btn btn-secondary btn-sm">Clear</a>
+  </form>
+</div>
+<div class="card fade-up">
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th><input type="checkbox" id="chk-all" onchange="toggleAll(this)"></th><th>Driver</th><th>Vehicle</th><th>Status</th><th>Approval</th><th>Rating</th><th>Rides</th><th>Earned</th><th>Actions</th></tr></thead>
+      <tbody>
+        {% if drivers %}{% for d in drivers %}
+        <tr>
+          <td><input type="checkbox" class="row-chk" value="{{ d._id }}" onchange="updateBulk()"></td>
+          <td>
+            <div style="display:flex;align-items:center;gap:.6rem">
+              <div style="width:28px;height:28px;border-radius:50%;background:var(--brand-lt);border:1.5px solid var(--brand);display:flex;align-items:center;justify-content:center;font-size:.78rem;overflow:hidden;flex-shrink:0">
+                {% if d.avatar %}<img src="{{ d.avatar }}" style="width:100%;height:100%;object-fit:cover">{% else %}🧑{% endif %}
+              </div>
+              <div><div style="font-weight:600;font-size:.845rem">{{ d.name }}</div><div style="font-size:.7rem;color:var(--text-3)">{{ d.email }}</div></div>
+            </div>
+          </td>
+          <td style="font-size:.82rem">{{ d.vehicle_number or '—' }}</td>
+          <td>{% if d.status=='online' %}<span class="badge b-green">● Online</span>{% elif d.status=='offline' %}<span class="badge b-muted">○ Offline</span>{% else %}<span class="badge b-red">Suspended</span>{% endif %}</td>
+          <td>{% if d.approval=='approved' %}<span class="badge b-green">Approved</span>{% elif d.approval=='pending' %}<span class="badge b-orange">Pending</span>{% else %}<span class="badge b-red">Rejected</span>{% endif %}</td>
+          <td style="color:#F59E0B;font-size:.845rem">⭐ {{ "%.1f"|format(d.rating or 5.0) }}</td>
+          <td style="font-size:.845rem">{{ d.total_rides or 0 }}</td>
+          <td style="font-size:.845rem;color:var(--brand);font-weight:600">₹{{ "%.0f"|format(d.total_earnings or 0) }}</td>
+          <td>
+            <div style="display:flex;gap:.35rem">
+              <a href="/drivers/{{ d._id }}" class="btn btn-secondary btn-sm btn-icon" title="View"><i class="fa fa-eye"></i></a>
+              {% if d.approval=='pending' %}
+              <form method="POST" action="/drivers/{{ d._id }}/approve" style="display:inline">
+                <button type="submit" class="btn btn-primary btn-sm" title="Approve"><i class="fa fa-check"></i></button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}{% else %}
+        <tr><td colspan="9" class="empty-cell">No drivers found.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function toggleAll(m){ document.querySelectorAll('.row-chk').forEach(c=>c.checked=m.checked); updateBulk(); }
+function updateBulk(){
+  const n=document.querySelectorAll('.row-chk:checked').length;
+  const b=document.getElementById('bulk-btn');
+  b.style.display=n>0?'':'none';
+  b.innerHTML=`<i class="fa fa-check"></i> Approve ${n} Selected`;
+}
+async function bulkApprove(){
+  const ids=[...document.querySelectorAll('.row-chk:checked')].map(c=>c.value);
+  if(!confirm(`Approve ${ids.length} drivers?`))return;
+  const r=await fetch('/drivers/api/bulk-approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids})});
+  const d=await r.json();
+  if(d.success) location.reload();
+}
+</script>
+{% endblock %}

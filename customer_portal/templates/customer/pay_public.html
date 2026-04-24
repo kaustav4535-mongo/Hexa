@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pay for Ride — E-TukTukGo</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',sans-serif;background:#F4F6F8;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem}
+.card{background:#fff;border-radius:20px;box-shadow:0 8px 32px rgba(0,0,0,.1);max-width:440px;width:100%;overflow:hidden}
+.card-header{background:linear-gradient(135deg,#1E8449,#27AE60);color:#fff;padding:2rem 1.75rem;text-align:center}
+.card-header .logo{font-size:2.5rem;margin-bottom:.5rem}
+.card-header h1{font-size:1.3rem;font-weight:800}
+.card-header p{font-size:.85rem;opacity:.85;margin-top:.3rem}
+.card-body{padding:1.75rem}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:.6rem 0;border-bottom:1px solid #F0F0F0;font-size:.9rem}
+.info-row:last-of-type{border-bottom:none}
+.info-label{color:#8A94A6}
+.info-val{font-weight:700;color:#1A1D23}
+.fare-big{text-align:center;padding:1.25rem;background:#E9F7EF;border-radius:12px;margin:1.25rem 0}
+.fare-big .amt{font-size:2.5rem;font-weight:900;color:#1E8449}
+.fare-big .lbl{font-size:.78rem;color:#8A94A6;margin-top:.2rem}
+.comm-note{background:#EAF4FB;border-radius:8px;padding:.6rem .85rem;font-size:.78rem;color:#2471A3;margin-bottom:1rem}
+.custom-wrap{margin-bottom:1rem}
+.custom-label{font-size:.78rem;font-weight:700;color:#8A94A6;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.4rem}
+.amount-row{display:flex;gap:.5rem;align-items:center}
+.amount-input{flex:1;padding:.65rem .85rem;border:1.5px solid #DDE3EC;border-radius:10px;font-size:1rem;font-weight:700;outline:none;transition:.18s}
+.amount-input:focus{border-color:#1E8449;box-shadow:0 0 0 3px rgba(30,132,73,.1)}
+.pay-btn{width:100%;padding:1rem;border:none;border-radius:12px;background:#1E8449;color:#fff;font-weight:800;font-size:1.05rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.6rem;transition:.2s;box-shadow:0 4px 16px rgba(30,132,73,.3)}
+.pay-btn:hover{background:#145a32;transform:translateY(-1px)}
+.pay-btn:disabled{opacity:.6;transform:none;cursor:not-allowed}
+.status-box{text-align:center;padding:2rem 1.75rem}
+.status-icon{font-size:3.5rem;margin-bottom:.75rem}
+.status-title{font-size:1.2rem;font-weight:800;margin-bottom:.5rem}
+.status-sub{font-size:.88rem;color:#8A94A6}
+.rzp-logo{text-align:center;margin-top:.75rem;opacity:.4;font-size:.75rem}
+</style>
+</head>
+<body>
+<div class="card">
+
+  <div class="card-header">
+    <div class="logo">🛺</div>
+    <h1>E-TukTukGo</h1>
+    <p>Someone shared this ride payment with you</p>
+  </div>
+
+  {% if already_paid %}
+  <div class="status-box">
+    <div class="status-icon">✅</div>
+    <div class="status-title">Already Paid!</div>
+    <div class="status-sub">This ride has already been paid. No action needed.</div>
+  </div>
+
+  {% elif locked %}
+  <div class="status-box">
+    <div class="status-icon">🔒</div>
+    <div class="status-title">Payment Not Ready Yet</div>
+    <div class="status-sub">The customer hasn't selected a driver yet. Ask them to select a driver first, then you can pay.</div>
+  </div>
+
+  {% else %}
+  <div class="card-body">
+    <!-- Ride details -->
+    <div class="info-row"><span class="info-label">📍 Pickup</span><span class="info-val" style="font-size:.82rem;max-width:200px;text-align:right">{{ booking.pickup_address }}</span></div>
+    {% if booking.dropoff_address %}
+    <div class="info-row"><span class="info-label">🏁 Drop-off</span><span class="info-val" style="font-size:.82rem;max-width:200px;text-align:right">{{ booking.dropoff_address }}</span></div>
+    {% endif %}
+    <div class="info-row"><span class="info-label">🧍 Passenger</span><span class="info-val">{{ booking.customer_name }}</span></div>
+    <div class="info-row"><span class="info-label">🛺 Driver</span><span class="info-val">{{ booking.driver_name or 'Assigned' }}</span></div>
+
+    <!-- Amount -->
+    <div class="fare-big">
+      <div class="amt" id="show-amt">₹{{ "%.0f"|format(fare) }}</div>
+      <div class="lbl">Amount agreed for this ride</div>
+    </div>
+
+    <div class="comm-note">
+      <i class="fa fa-circle-info"></i>
+      ₹{{ commission|int }} platform fee · Driver receives ₹{{ "%.0f"|format(driver_earn) }}
+    </div>
+
+    <!-- Custom amount -->
+    <div class="custom-wrap">
+      <div class="custom-label">Want to pay a different amount?</div>
+      <div class="amount-row">
+        <span style="font-size:1.1rem;font-weight:700;color:#1E8449">₹</span>
+        <input type="number" id="custom-amt" class="amount-input" value="{{ "%.0f"|format(fare) }}" min="10" placeholder="{{ "%.0f"|format(fare) }}">
+        <button onclick="updateAmt()" style="padding:.6rem 1rem;border-radius:8px;border:1.5px solid #1E8449;background:#E9F7EF;color:#1E8449;font-weight:700;cursor:pointer">Set</button>
+      </div>
+    </div>
+
+    <button class="pay-btn" id="pay-btn" onclick="startPay()">
+      <i class="fa fa-lock"></i> Pay ₹<span id="pay-amt">{{ "%.0f"|format(fare) }}</span> for This Ride
+    </button>
+    <div class="rzp-logo">Secured by Razorpay</div>
+  </div>
+  {% endif %}
+
+</div>
+
+{% if not already_paid and not locked %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+var TOKEN  = '{{ token }}';
+var AMOUNT = {{ fare }};
+var RZP_KEY = '{{ rzp_key }}';
+
+function updateAmt() {
+  var v = parseFloat(document.getElementById('custom-amt').value);
+  if (!v || v < 10) { alert('Minimum ₹10'); return; }
+  AMOUNT = v;
+  document.getElementById('show-amt').textContent = '₹'+Math.round(v);
+  document.getElementById('pay-amt').textContent  = Math.round(v);
+}
+
+async function startPay() {
+  var btn = document.getElementById('pay-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Creating order...';
+
+  var r = await fetch('/booking/pay/'+TOKEN+'/create-order', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({amount: AMOUNT})
+  });
+  var d = await r.json();
+  if (!d.success) {
+    alert(d.error || 'Error creating order');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa fa-lock"></i> Pay ₹'+Math.round(AMOUNT)+' for This Ride';
+    return;
+  }
+
+  var rzp = new Razorpay({
+    key:         RZP_KEY,
+    amount:      Math.round(AMOUNT * 100),
+    currency:    'INR',
+    name:        'E-TukTukGo',
+    description: 'Ride payment on behalf of {{ booking.customer_name|replace("'","") }}',
+    order_id:    d.order_id,
+    theme:       {color:'#1E8449'},
+    handler: async function(resp) {
+      var vr = await fetch('/booking/pay/'+TOKEN+'/verify', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          razorpay_order_id:   resp.razorpay_order_id,
+          razorpay_payment_id: resp.razorpay_payment_id,
+          razorpay_signature:  resp.razorpay_signature,
+        })
+      });
+      var vd = await vr.json();
+      if (vd.success) {
+        document.querySelector('.card').innerHTML =
+          '<div class="status-box" style="padding:3rem 1.75rem">' +
+          '<div class="status-icon">🎉</div>' +
+          '<div class="status-title">Payment Successful!</div>' +
+          '<div class="status-sub">' + vd.message + '</div>' +
+          '</div>';
+      } else {
+        alert('Payment verification failed. Contact support if money was deducted.');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa fa-lock"></i> Pay ₹'+Math.round(AMOUNT)+' for This Ride';
+      }
+    },
+    modal: {ondismiss: function(){
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa fa-lock"></i> Pay ₹'+Math.round(AMOUNT)+' for This Ride';
+    }}
+  });
+  rzp.open();
+}
+</script>
+{% endif %}
+</body>
+</html>

@@ -1,0 +1,220 @@
+{% extends "driver/base.html" %}
+{% block title %}Driver Profile — Driver Hub{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+
+{% block extra_css %}
+<style>
+  .ava-wrap{position:relative;display:inline-block}
+  .ava-xl{width:110px;height:110px;border-radius:50%;border:4px solid var(--brand);overflow:hidden;background:var(--brand-lt);display:flex;align-items:center;justify-content:center;font-size:2.8rem;cursor:pointer;transition:all .2s;margin:0 auto}
+  .ava-xl:hover{box-shadow:0 0 0 6px var(--brand-lt)}
+  .ava-xl img{width:100%;height:100%;object-fit:cover}
+  .ava-cam{position:absolute;bottom:4px;right:4px;width:30px;height:30px;border-radius:50%;background:var(--brand);color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.8rem;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+  .doc-zone{border:2px dashed var(--border);border-radius:var(--radius-md);padding:1.5rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface-2)}
+  .doc-zone:hover{border-color:var(--brand);background:var(--brand-lt)}
+  .doc-zone.uploaded{border-style:solid;border-color:var(--brand);background:var(--brand-lt)}
+  .doc-chips{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.75rem}
+  .chip{padding:.3rem .75rem;border-radius:20px;border:1.5px solid var(--border);font-size:.77rem;font-weight:600;cursor:pointer;background:var(--surface);color:var(--text-2);transition:all .15s}
+  .chip.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:560px">
+
+  <!-- Avatar card -->
+  <div class="card card-p fade-up" style="margin-bottom:1.25rem;text-align:center">
+    <div class="ava-wrap" style="margin-bottom:1rem">
+      <div class="ava-xl" onclick="document.getElementById('drv-ava-inp').click()">
+        <img id="drv-ava-img" src="{{ driver.avatar or '' }}"
+             style="display:{% if driver.avatar %}block{% else %}none{% endif %}">
+        <span id="drv-ava-ini" style="display:{% if driver.avatar %}none{% else %}block{% endif %}">🧑</span>
+      </div>
+      <div class="ava-cam" onclick="document.getElementById('drv-ava-inp').click()">
+        <i class="fa fa-camera"></i>
+      </div>
+    </div>
+    <input type="file" id="drv-ava-inp" accept="image/*" style="display:none" onchange="uploadAvatar(this)">
+    <div id="ava-prog" style="display:none;height:4px;border-radius:2px;background:var(--border);margin:.5rem auto;max-width:200px;overflow:hidden">
+      <div id="ava-bar" style="height:100%;background:var(--brand);width:0;transition:width .4s;border-radius:2px"></div>
+    </div>
+    <div style="font-family:var(--font-h);font-size:1.25rem;font-weight:800">{{ driver.name }}</div>
+    <div style="font-size:.83rem;color:var(--text-3);margin-top:.2rem">{{ driver.email }}</div>
+    <div style="margin-top:.4rem;display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap">
+      {% if driver.approval == 'approved' %}
+        <span class="badge badge-success">✓ Approved</span>
+      {% elif driver.approval == 'pending' %}
+        <span class="badge badge-warning">⏳ Pending Approval</span>
+      {% else %}
+        <span class="badge badge-danger">✗ Rejected</span>
+      {% endif %}
+      {% if driver.id_doc_url %}
+        <span class="badge badge-info">🪪 ID Verified</span>
+      {% else %}
+        <span class="badge badge-muted">⚠ No ID uploaded</span>
+      {% endif %}
+    </div>
+    <div id="ava-status" style="margin-top:.5rem;font-size:.78rem;color:var(--text-3)"></div>
+    <div style="font-size:.72rem;color:var(--text-3);margin-top:.5rem">
+      Click photo to upload a new profile picture
+    </div>
+  </div>
+
+  <!-- Identity Document -->
+  <div class="card card-p fade-up" style="margin-bottom:1.25rem">
+    <div class="card-title"><i class="fa fa-id-card" style="color:var(--brand)"></i> Identity Document</div>
+    <p style="font-size:.83rem;color:var(--text-3);margin-bottom:.9rem">
+      Required for admin verification. Upload Aadhaar, Driving License, or any government ID.
+    </p>
+    <div class="doc-chips" id="doc-chips">
+      {% for t,l in [('aadhaar','Aadhaar'),('dl','Driving License'),('pan','PAN'),('voter','Voter ID'),('passport','Passport')] %}
+      <button class="chip {% if driver.id_doc_type == t %}on{% endif %}"
+              onclick="selectDoc('{{ t }}',this)">{{ l }}</button>
+      {% endfor %}
+    </div>
+    <div class="doc-zone {% if driver.id_doc_url %}uploaded{% endif %}"
+         id="doc-zone"
+         onclick="document.getElementById('doc-inp').click()"
+         ondragover="event.preventDefault();this.style.borderColor='var(--brand)'"
+         ondragleave="this.style.borderColor=''"
+         ondrop="dropDoc(event)">
+      {% if driver.id_doc_url %}
+        <div style="margin-bottom:.75rem">
+          {% if driver.id_doc_url.endswith('.pdf') %}
+            <div style="font-size:2.5rem">📄</div>
+          {% else %}
+            <img src="{{ driver.id_doc_url }}" style="max-height:130px;max-width:100%;border-radius:8px;object-fit:contain;border:1px solid var(--border)">
+          {% endif %}
+        </div>
+        <div style="font-size:.83rem;font-weight:700;color:var(--brand)">
+          ✓ {{ driver.id_doc_type|upper if driver.id_doc_type else 'Document' }} uploaded
+        </div>
+        <div style="font-size:.72rem;color:var(--text-3);margin-top:.2rem">Click to replace</div>
+      {% else %}
+        <div style="font-size:2.5rem;margin-bottom:.6rem">📤</div>
+        <div style="font-weight:600;font-size:.88rem;margin-bottom:.3rem">Click or drag to upload</div>
+        <div style="font-size:.73rem;color:var(--text-3)">JPG, PNG or PDF · Max 10MB</div>
+      {% endif %}
+    </div>
+    <input type="file" id="doc-inp" accept="image/*,.pdf" style="display:none" onchange="uploadDoc(this)">
+    <div id="doc-prog" style="display:none;height:4px;border-radius:2px;background:var(--border);margin-top:.6rem;overflow:hidden">
+      <div id="doc-bar" style="height:100%;background:var(--brand);width:0;transition:width .4s;border-radius:2px"></div>
+    </div>
+    <div id="doc-status" style="margin-top:.5rem;font-size:.78rem;color:var(--text-3)"></div>
+  </div>
+
+  <!-- Vehicle info -->
+  <div class="card card-p fade-up" style="margin-bottom:1.25rem">
+    <div class="card-title"><i class="fa fa-car" style="color:var(--text-3)"></i> Vehicle & License</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+      {% for lbl,val in [('Vehicle No.',driver.vehicle_number),('License No.',driver.license_no),('Phone',driver.phone),('Zone',driver.home_zone_id or 'Not assigned')] %}
+      <div style="background:var(--surface-2);border-radius:10px;padding:.8rem">
+        <div style="font-size:.68rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.2rem">{{ lbl }}</div>
+        <div style="font-weight:700;font-size:.88rem">{{ val or '—' }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <a href="/profile/edit" class="btn btn-secondary btn-sm" style="margin-top:.9rem">
+      <i class="fa fa-pen"></i> Edit Profile
+    </a>
+  </div>
+
+  <!-- Stats -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:1.25rem">
+    {% set wallet_str = '₹' ~ (driver.wallet or 0)|int %}
+    {% for icon,lbl,val,color in [
+      ('⭐','Rating', driver.rating or 5.0, 'var(--accent)'),
+      ('🛺','Total Rides', driver.total_rides or 0, 'var(--brand)'),
+      ('💰','Wallet', wallet_str, 'var(--brand)'),
+    ] %}
+    <div class="card card-p" style="text-align:center">
+      <div style="font-size:1.5rem;margin-bottom:.3rem">{{ icon }}</div>
+      <div style="font-family:var(--font-h);font-size:1.1rem;font-weight:800;color:{{ color }}">{{ val }}</div>
+      <div style="font-size:.72rem;color:var(--text-3)">{{ lbl }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Change password -->
+  {% if driver.auth_provider != 'google' %}
+  <div class="card card-p fade-up">
+    <div class="card-title"><i class="fa fa-lock" style="color:var(--text-3)"></i> Change Password</div>
+    <form method="POST" action="/profile/change-password">
+      <div class="form-group">
+        <label class="form-label">Current Password</label>
+        <div class="pw-wrap"><input type="password" name="old_password" id="pw-a" class="form-control" placeholder="••••••••" required>
+        <button type="button" class="pw-eye" onclick="togglePw('pw-a',this)" tabindex="-1">👁️</button></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">New Password</label>
+        <div class="pw-wrap"><input type="password" name="new_password" id="pw-b" class="form-control" placeholder="Min 8 characters" minlength="8" required>
+        <button type="button" class="pw-eye" onclick="togglePw('pw-b',this)" tabindex="-1">👁️</button></div>
+      </div>
+      <button type="submit" class="btn btn-secondary btn-sm"><i class="fa fa-key"></i> Update Password</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var _dt = '{{ driver.id_doc_type or "aadhaar" }}';
+
+function selectDoc(t, btn) {
+  _dt = t;
+  document.querySelectorAll('.chip').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+async function uploadAvatar(inp) {
+  var file = inp.files[0]; if (!file) return;
+  var prog=document.getElementById('ava-prog'), bar=document.getElementById('ava-bar');
+  var stat=document.getElementById('ava-status');
+  prog.style.display='block'; stat.textContent='Uploading...';
+  var pct=0, iv=setInterval(()=>{pct=Math.min(pct+8,85);bar.style.width=pct+'%';},150);
+  var fd=new FormData(); fd.append('avatar',file);
+  try {
+    var r=await fetch('/profile/upload-avatar',{method:'POST',body:fd});
+    var d=await r.json();
+    clearInterval(iv); bar.style.width='100%';
+    setTimeout(()=>{prog.style.display='none';bar.style.width='0';},600);
+    if (d.success) {
+      document.getElementById('drv-ava-img').src=d.url;
+      document.getElementById('drv-ava-img').style.display='block';
+      document.getElementById('drv-ava-ini').style.display='none';
+      stat.textContent='✓ Photo updated!'; stat.style.color='var(--brand)';
+    } else { stat.textContent='✗ '+d.error; stat.style.color='var(--danger)'; }
+  } catch(e){ clearInterval(iv); prog.style.display='none'; stat.textContent='✗ Network error'; stat.style.color='var(--danger)'; }
+}
+
+async function uploadDoc(inp) {
+  var file=inp.files[0]; if(!file) return;
+  var prog=document.getElementById('doc-prog'),bar=document.getElementById('doc-bar');
+  var stat=document.getElementById('doc-status');
+  prog.style.display='block'; stat.textContent='Uploading document...';
+  var pct=0,iv=setInterval(()=>{pct=Math.min(pct+7,85);bar.style.width=pct+'%';},200);
+  var fd=new FormData(); fd.append('id_doc',file); fd.append('id_type',_dt);
+  try {
+    var r=await fetch('/profile/upload-id-doc',{method:'POST',body:fd});
+    var d=await r.json();
+    clearInterval(iv); bar.style.width='100%';
+    setTimeout(()=>{prog.style.display='none';bar.style.width='0';},600);
+    if (d.success) {
+      stat.textContent='✓ Document uploaded!'; stat.style.color='var(--brand)';
+      var z=document.getElementById('doc-zone');
+      z.classList.add('uploaded');
+      z.innerHTML='<div style="font-size:2rem;margin-bottom:.4rem">✅</div>'+
+        '<div style="font-size:.85rem;font-weight:700;color:var(--brand)">'+_dt.toUpperCase()+' uploaded</div>'+
+        '<div style="font-size:.72rem;color:var(--text-3);margin-top:.2rem">Click to replace</div>';
+    } else { stat.textContent='✗ '+d.error; stat.style.color='var(--danger)'; }
+  } catch(e){ clearInterval(iv); prog.style.display='none'; stat.textContent='✗ Network error'; stat.style.color='var(--danger)'; }
+}
+
+function dropDoc(e){
+  e.preventDefault(); document.getElementById('doc-zone').style.borderColor='';
+  var file=e.dataTransfer.files[0]; if(!file) return;
+  var dt=new DataTransfer(); dt.items.add(file);
+  var inp=document.getElementById('doc-inp'); inp.files=dt.files; uploadDoc(inp);
+}
+</script>
+{% endblock %}

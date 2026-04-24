@@ -1,0 +1,85 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ action }} Zone — Admin{% endblock %}
+{% block page_title %}{{ action }} Pricing Zone{% endblock %}
+{% block content %}
+<div class="ph"><div><div class="ph-title">{{ action }} Zone</div><div class="ph-sub">Changes go live instantly on all portals.</div></div><a href="/pricing/" class="btn btn-secondary btn-sm">← Back</a></div>
+<div style="max-width:680px">
+  <form method="POST">
+    <div class="card card-p fade-up" style="margin-bottom:1.1rem">
+      <div class="card-title"><i class="fa fa-map-location-dot" style="color:var(--info)"></i> Zone Identity</div>
+      <div class="form-group"><label class="form-label">Zone Name *</label><input type="text" name="name" class="form-control" placeholder="e.g. Jorhat Central" value="{{ zone.name if zone else '' }}" required></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">State</label><input type="text" name="state" class="form-control" placeholder="Assam" value="{{ zone.state if zone else '' }}"></div>
+        <div class="form-group"><label class="form-label">District</label><input type="text" name="district" class="form-control" placeholder="Jorhat" value="{{ zone.district if zone else '' }}"></div>
+      </div>
+      <div style="background:var(--info-lt);border:1px solid var(--info);border-radius:var(--radius-md);padding:.9rem 1rem;margin-bottom:1rem;font-size:.82rem;color:var(--info)">
+        <strong>🌐 Geographic Boundary</strong> — Set center coordinates + radius to enable automatic zone detection for customers. Customers outside all zones are auto-assigned to the nearest zone with an inter-zone surcharge.
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Center Latitude</label><input type="number" name="center_lat" class="form-control" step="any" placeholder="e.g. 26.7509" value="{{ zone.center_lat if zone and zone.center_lat else '' }}"><small style="font-size:.7rem;color:var(--text-3)">Decimal degrees (use Google Maps to find)</small></div>
+        <div class="form-group"><label class="form-label">Center Longitude</label><input type="number" name="center_lng" class="form-control" step="any" placeholder="e.g. 94.2037" value="{{ zone.center_lng if zone and zone.center_lng else '' }}"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Zone Radius (km)</label><input type="number" name="radius_km" class="form-control" step="0.5" min="1" placeholder="10" value="{{ zone.radius_km if zone and zone.radius_km else 10 }}"><small style="font-size:.7rem;color:var(--text-3)">Bookings within this radius are "in-zone"</small></div>
+        <div class="form-group"><label class="form-label">Inter-Zone Surcharge (×)</label><input type="number" name="interzone_surcharge" class="form-control" step="0.1" min="1" placeholder="1.3" value="{{ zone.interzone_surcharge if zone and zone.interzone_surcharge else 1.3 }}"><small style="font-size:.7rem;color:var(--text-3)">Applied when customer is outside zone boundary</small></div>
+      </div>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="getMyLocation()">
+        <i class="fa fa-location-crosshairs"></i> Use My Current Location as Center
+      </button>
+    </div>
+    <div class="card card-p fade-up" style="margin-bottom:1.1rem">
+      <div class="card-title"><i class="fa fa-indian-rupee-sign" style="color:var(--brand)"></i> Core Pricing</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Base Fare (₹) *</label><input type="number" name="base_fare" class="form-control" step="0.5" min="0" value="{{ zone.base_fare if zone else 30 }}" required oninput="lp()"></div>
+        <div class="form-group"><label class="form-label">Minimum Fare (₹) *</label><input type="number" name="minimum_fare" class="form-control" step="0.5" min="0" value="{{ zone.minimum_fare if zone else 50 }}" required oninput="lp()"></div>
+        <div class="form-group"><label class="form-label">Per KM Rate (₹) *</label><input type="number" name="per_km_rate" class="form-control" step="0.5" min="0" value="{{ zone.per_km_rate if zone else 12 }}" required></div>
+        <div class="form-group"><label class="form-label">Per Hour Rate (₹) *</label><input type="number" name="per_hour_rate" class="form-control" step="0.5" min="0" value="{{ zone.per_hour_rate if zone else 80 }}" required oninput="lp()"></div>
+      </div>
+    </div>
+    <div class="card card-p fade-up" style="margin-bottom:1.1rem">
+      <div class="card-title"><i class="fa fa-bolt" style="color:var(--accent)"></i> Multipliers & Surcharges</div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Night Surcharge (×)</label><input type="number" name="night_surcharge" class="form-control" step="0.1" min="1" value="{{ zone.night_surcharge if zone else 1.3 }}"><small style="font-size:.7rem;color:var(--text-3)">10 PM – 6 AM</small></div>
+        <div class="form-group"><label class="form-label">Peak Hour (×)</label><input type="number" name="peak_multiplier" class="form-control" step="0.1" min="1" value="{{ zone.peak_multiplier if zone else 1.5 }}"></div>
+        <div class="form-group"><label class="form-label">Emergency (×)</label><input type="number" name="emergency_multiplier" class="form-control" step="0.1" min="1" value="{{ zone.emergency_multiplier if zone else 1.5 }}"></div>
+        <div class="form-group"><label class="form-label">Cancellation Fee (%)</label><input type="number" name="cancellation_pct" class="form-control" step="1" min="0" max="100" value="{{ zone.cancellation_pct if zone else 10 }}"></div>
+      </div>
+    </div>
+    <div style="background:var(--brand-lt);border:1.5px solid var(--brand);border-radius:var(--radius-md);padding:1rem;margin-bottom:1.1rem" id="prev-box">
+      <div style="font-size:.72rem;color:var(--brand);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.6rem">⚡ Live Preview — 1 Hour Ride</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;font-size:.84rem">
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">Base</span><span id="pv-b">₹30</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">+ 1h</span><span id="pv-h">₹80</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">Min</span><span id="pv-m">₹50</span></div>
+        <div style="display:flex;justify-content:space-between;font-weight:800;font-size:.95rem"><span>Total</span><span id="pv-t" style="color:var(--brand)">₹110</span></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:.75rem">
+      <button type="submit" class="btn btn-primary btn-lg"><i class="fa fa-check"></i> {{ action }} Zone</button>
+      <a href="/pricing/" class="btn btn-secondary btn-lg">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function getMyLocation() {
+  if (!navigator.geolocation) { alert('GPS not available'); return; }
+  navigator.geolocation.getCurrentPosition(function(pos) {
+    document.querySelector('[name=center_lat]').value = pos.coords.latitude.toFixed(6);
+    document.querySelector('[name=center_lng]').value = pos.coords.longitude.toFixed(6);
+  }, function() { alert('Could not get location'); }, {enableHighAccuracy:true});
+}
+function lp(){
+  const b=parseFloat(document.querySelector('[name=base_fare]').value)||0;
+  const h=parseFloat(document.querySelector('[name=per_hour_rate]').value)||0;
+  const m=parseFloat(document.querySelector('[name=minimum_fare]').value)||0;
+  const t=Math.max(b+h,m);
+  document.getElementById('pv-b').textContent='₹'+b;
+  document.getElementById('pv-h').textContent='₹'+h;
+  document.getElementById('pv-m').textContent='₹'+m;
+  document.getElementById('pv-t').textContent='₹'+t.toFixed(2);
+}
+lp();
+</script>
+{% endblock %}

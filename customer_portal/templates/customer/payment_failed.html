@@ -1,0 +1,13 @@
+{% extends "customer/base.html" %}
+{% block title %}Payment Failed{% endblock %}
+{% block content %}
+<div style="max-width:480px;margin:4rem auto;padding:0 1.25rem;text-align:center" class="fade-up">
+  <div style="font-size:5rem;margin-bottom:1rem">❌</div>
+  <h1 style="font-family:var(--font-h);font-size:2rem;font-weight:800;color:var(--danger);margin-bottom:.5rem">Payment Failed</h1>
+  <p style="color:var(--text-2);margin-bottom:2rem">Something went wrong. Your booking is saved — please try again.</p>
+  <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+    <a href="/payment/checkout/{{ booking._id }}" class="btn btn-primary">Try Again</a>
+    <a href="/booking/my" class="btn btn-secondary">My Bookings</a>
+  </div>
+</div>
+{% endblock %}

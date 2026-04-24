@@ -1,0 +1,211 @@
+{% extends "customer/base.html" %}
+{% block title %}Pay for Ride — E-TukTukGo{% endblock %}
+{% block extra_css %}
+<style>
+.pay-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.1rem}
+.method-btn{width:100%;padding:1.1rem 1.25rem;border-radius:var(--radius-md);border:2px solid var(--border);background:var(--surface);cursor:pointer;display:flex;align-items:center;gap:1rem;text-align:left;transition:.18s;margin-bottom:.6rem}
+.method-btn:hover{border-color:var(--brand);background:var(--brand-lt)}
+.method-btn.selected{border-color:var(--brand);background:var(--brand-lt)}
+.method-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0}
+.mi-online{background:#E8F5E9}.mi-cash{background:#FFF8E1}
+.commission-note{background:var(--info-lt);border:1px solid var(--info);border-radius:8px;padding:.7rem .9rem;font-size:.8rem;color:var(--info);margin:.75rem 0}
+.amount-edit{background:var(--surface-2);border-radius:var(--radius-md);padding:1rem;margin:.75rem 0}
+.big-pay-btn{width:100%;padding:1rem;border:none;border-radius:var(--radius-md);font-weight:800;font-size:1.05rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.6rem;transition:.2s}
+.pay-online-btn{background:var(--brand);color:#fff;box-shadow:0 4px 16px rgba(30,132,73,.3)}
+.pay-online-btn:hover{background:#145a32;transform:translateY(-1px)}
+.pay-cash-btn{background:#F59E0B;color:#fff;box-shadow:0 4px 16px rgba(245,158,11,.3)}
+.pay-cash-btn:hover{background:#D97706}
+</style>
+{% endblock %}
+{% block content %}
+<div class="page-wrap-sm">
+  <div style="font-family:var(--font-h);font-size:1.3rem;font-weight:800;margin-bottom:1.25rem">
+    💳 Choose Payment Method
+  </div>
+
+  <!-- Booking summary -->
+  <div class="pay-card">
+    <div style="font-size:.72rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.5rem">Ride Summary</div>
+    <div style="font-size:.9rem;margin-bottom:.4rem">📍 {{ booking.pickup_address }}</div>
+    {% if booking.dropoff_address %}
+    <div style="font-size:.9rem;margin-bottom:.75rem;color:var(--text-3)">🏁 {{ booking.dropoff_address }}</div>
+    {% endif %}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.5rem">
+      <div>
+        <div style="font-size:.72rem;color:var(--text-3)">You Pay</div>
+        <div style="font-family:var(--font-h);font-size:1.8rem;font-weight:900;color:var(--brand)" id="display-amount">₹{{ "%.0f"|format(booking.fare) }}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:.72rem;color:var(--text-3)">Driver Gets</div>
+        <div style="font-size:1.2rem;font-weight:700;color:var(--text-1)">₹{{ "%.0f"|format(driver_earn) }}</div>
+      </div>
+    </div>
+    <!-- Commission info -->
+    <div class="commission-note">
+      <i class="fa fa-circle-info"></i>
+      ₹{{ commission|int }} platform fee · Driver receives ₹{{ "%.0f"|format(driver_earn) }} of your payment
+    </div>
+  </div>
+
+  <!-- Custom amount option -->
+  <div class="amount-edit">
+    <div style="font-size:.82rem;font-weight:700;margin-bottom:.6rem">
+      ✏️ Want to pay a different amount? (you agreed with your driver)
+    </div>
+    <div style="display:flex;gap:.5rem;align-items:center">
+      <span style="font-size:1.1rem;font-weight:700;color:var(--brand)">₹</span>
+      <input type="number" id="custom-amount" class="form-control" style="max-width:160px"
+             placeholder="{{ "%.0f"|format(booking.fare) }}"
+             min="10" step="1"
+             value="{{ "%.0f"|format(booking.fare) }}">
+      <button onclick="updateAmount()" class="btn btn-secondary btn-sm">Update</button>
+    </div>
+    <div style="font-size:.73rem;color:var(--text-3);margin-top:.35rem">
+      Minimum ₹10 · ₹{{ commission|int }} platform fee always applies
+    </div>
+  </div>
+
+  <!-- Payment method selection -->
+  <div class="pay-card">
+    <div style="font-size:.82rem;font-weight:700;margin-bottom:.9rem;color:var(--text-2)">Select how to pay:</div>
+
+    <button class="method-btn selected" id="btn-online" onclick="selectMethod('online')">
+      <div class="method-icon mi-online">📱</div>
+      <div>
+        <div style="font-weight:700;font-size:.95rem">Pay Online</div>
+        <div style="font-size:.78rem;color:var(--text-3)">UPI, Card, Net Banking via Razorpay · Instant & Secure</div>
+      </div>
+      <div style="margin-left:auto;font-size:1.2rem" id="check-online">✅</div>
+    </button>
+
+    <button class="method-btn" id="btn-cash" onclick="selectMethod('cash')">
+      <div class="method-icon mi-cash">💵</div>
+      <div>
+        <div style="font-weight:700;font-size:.95rem">Pay Cash to Driver</div>
+        <div style="font-size:.78rem;color:var(--text-3)">Pay directly after the ride · No app transaction needed</div>
+      </div>
+      <div style="margin-left:auto;font-size:1.2rem" id="check-cash">⬜</div>
+    </button>
+  </div>
+
+  <!-- Pay buttons -->
+  <div id="pay-online-section">
+    <button class="big-pay-btn pay-online-btn" onclick="startOnlinePayment()" id="rzp-btn">
+      <i class="fa fa-lock"></i> Pay ₹<span id="pay-amount-btn">{{ "%.0f"|format(booking.fare) }}</span> Online
+    </button>
+    <div style="text-align:center;margin-top:.5rem">
+      <img src="https://cdn.razorpay.com/static/assets/logo/rzp-powered.svg" alt="Razorpay" height="18" style="opacity:.5">
+    </div>
+  </div>
+
+  <div id="pay-cash-section" style="display:none">
+    <button class="big-pay-btn pay-cash-btn" onclick="confirmCash()">
+      <i class="fa fa-handshake"></i> Confirm — I'll Pay Cash to Driver
+    </button>
+    <div style="text-align:center;margin-top:.6rem;font-size:.78rem;color:var(--text-3)">
+      Driver will start your ride. Pay ₹<span id="cash-amount">{{ "%.0f"|format(booking.fare) }}</span> directly when done.
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+var BID    = '{{ booking._id }}';
+var FARE   = {{ booking.fare }};
+var COMM   = {{ commission }};
+var RZP_KEY = '{{ rzp_key }}';
+var USER_NAME  = '{{ user.name|replace("'","") }}';
+var USER_EMAIL = '{{ user.email }}';
+var USER_PHONE = '{{ booking.customer_email }}';
+var currentAmount = FARE;
+var currentMethod = 'online';
+
+function selectMethod(m) {
+  currentMethod = m;
+  document.getElementById('btn-online').classList.toggle('selected', m==='online');
+  document.getElementById('btn-cash').classList.toggle('selected', m==='cash');
+  document.getElementById('check-online').textContent = m==='online' ? '✅' : '⬜';
+  document.getElementById('check-cash').textContent   = m==='cash'   ? '✅' : '⬜';
+  document.getElementById('pay-online-section').style.display = m==='online' ? '' : 'none';
+  document.getElementById('pay-cash-section').style.display   = m==='cash'   ? '' : 'none';
+}
+
+function updateAmount() {
+  var val = parseFloat(document.getElementById('custom-amount').value);
+  if (!val || val < 10) { alert('Minimum amount is ₹10'); return; }
+  currentAmount = val;
+  var earn = Math.max(0, val - COMM);
+  document.getElementById('display-amount').textContent = '₹' + Math.round(val);
+  document.getElementById('pay-amount-btn').textContent  = Math.round(val);
+  document.getElementById('cash-amount').textContent     = Math.round(val);
+  // Update driver earn display
+  document.querySelector('[style*="Driver Gets"] + div').textContent = '₹' + Math.round(earn);
+}
+
+async function startOnlinePayment() {
+  var btn = document.getElementById('rzp-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa fa-spinner spin"></i> Creating order...';
+
+  var r = await fetch('/payment/create-order', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({booking_id: BID, amount: currentAmount})
+  });
+  var d = await r.json();
+  if (!d.success) {
+    alert(d.error || 'Could not create order. Please try again.');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa fa-lock"></i> Pay ₹'+Math.round(currentAmount)+' Online';
+    return;
+  }
+
+  var options = {
+    key:         RZP_KEY,
+    amount:      Math.round(d.amount * 100),
+    currency:    'INR',
+    name:        'E-TukTukGo',
+    description: 'Ride payment',
+    order_id:    d.order_id,
+    prefill:     {name: USER_NAME, email: USER_EMAIL},
+    theme:       {color: '#1E8449'},
+    handler: async function(resp) {
+      var vr = await fetch('/payment/verify', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          razorpay_order_id:   resp.razorpay_order_id,
+          razorpay_payment_id: resp.razorpay_payment_id,
+          razorpay_signature:  resp.razorpay_signature,
+          booking_id:          BID
+        })
+      });
+      var vd = await vr.json();
+      if (vd.success) {
+        window.location.href = vd.redirect;
+      } else {
+        alert('Payment verification failed. Contact support if money was deducted.');
+        window.location.href = '/payment/failed/'+BID;
+      }
+    },
+    modal: {ondismiss: function(){
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa fa-lock"></i> Pay ₹'+Math.round(currentAmount)+' Online';
+    }}
+  };
+  new Razorpay(options).open();
+}
+
+async function confirmCash() {
+  if (!confirm('Confirm cash payment of ₹'+Math.round(currentAmount)+' to be paid directly to driver?')) return;
+  var r = await fetch('/payment/cash/'+BID, {method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({amount: currentAmount})
+  });
+  var d = await r.json();
+  if (d.success) { window.location.href = d.redirect; }
+  else { alert(d.error || 'Error. Please try again.'); }
+}
+</script>
+{% endblock %}

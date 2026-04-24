@@ -1,0 +1,28 @@
+{% extends "customer/base.html" %}
+{% block title %}Wallet — E-TukTukGo{% endblock %}
+{% block content %}
+<div class="page-wrap-sm" style="padding-top:2rem">
+  <h1 style="font-family:var(--font-h);font-size:1.5rem;font-weight:800;margin-bottom:1.5rem">💰 My Wallet</h1>
+  <div class="card card-p" style="margin-bottom:1.25rem;text-align:center;background:linear-gradient(135deg,var(--brand),var(--brand-dk));color:#fff;border:none">
+    <div style="font-size:.78rem;opacity:.8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem">Available Balance</div>
+    <div style="font-family:var(--font-h);font-size:3rem;font-weight:800">₹{{ "%.2f"|format(user.wallet or 0) }}</div>
+    <div style="margin-top:1rem;display:inline-flex;align-items:center;gap:.5rem;background:rgba(255,255,255,.15);border-radius:20px;padding:.35rem .9rem;font-size:.83rem">
+      🎁 {{ user.loyalty_points or 0 }} Loyalty Points
+    </div>
+  </div>
+  <div class="card card-p" style="margin-bottom:1.25rem">
+    <div class="card-title">🎁 Loyalty Points</div>
+    <p style="font-size:.85rem;color:var(--text-2);margin-bottom:.75rem">Earn 1 point per ₹10 spent. Every 10 points = ₹1 discount.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;text-align:center">
+      <div style="background:var(--surface-2);border-radius:var(--radius-md);padding:1rem"><div style="font-family:var(--font-h);font-size:1.4rem;font-weight:800;color:var(--brand)">{{ user.loyalty_points or 0 }}</div><div style="font-size:.72rem;color:var(--text-3)">Points Earned</div></div>
+      <div style="background:var(--surface-2);border-radius:var(--radius-md);padding:1rem"><div style="font-family:var(--font-h);font-size:1.4rem;font-weight:800;color:var(--accent)">₹{{ ((user.loyalty_points or 0) / 10)|int }}</div><div style="font-size:.72rem;color:var(--text-3)">Cash Value</div></div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:1.25rem">
+    <div class="card-p" style="border-bottom:1px solid var(--border)"><div class="card-title" style="margin-bottom:0">Transaction History</div></div>
+    {% if payments %}<div class="table-wrap"><table><thead><tr><th>Payment ID</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody>{% for p in payments %}<tr><td style="font-size:.78rem;color:var(--text-3)">{{ p.razorpay_payment_id[:16] }}…</td><td style="color:var(--brand);font-weight:700">₹{{ "%.2f"|format(p.amount) }}</td><td><span class="badge badge-success">{{ p.status }}</span></td><td style="font-size:.78rem;color:var(--text-3)">{{ p.created_at[:10] if p.created_at else '—' }}</td></tr>{% endfor %}</tbody></table></div>
+    {% else %}<div style="text-align:center;padding:2rem;color:var(--text-3)">No transactions yet</div>{% endif %}
+  </div>
+  <a href="/profile/" class="btn btn-secondary btn-sm">← Back to Profile</a>
+</div>
+{% endblock %}

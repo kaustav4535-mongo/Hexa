@@ -1,0 +1,397 @@
+{% extends "driver/base.html" %}
+{% block title %}Ride #{{ booking._id[:8].upper() }} — Driver Hub{% endblock %}
+{% block page_title %}Ride Detail{% endblock %}
+
+{% block extra_css %}
+<style>
+  #driver-ride-map { width:100%; height:320px; border-radius:16px; border:1.5px solid var(--border); box-shadow:var(--shadow-md); overflow:hidden; background:var(--surface-2); }
+  .map-toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.5rem; margin-bottom:.6rem; }
+  .map-legend  { display:flex; gap:.9rem; font-size:.72rem; color:var(--text-3); margin-top:.5rem; flex-wrap:wrap; }
+  .leg-dot     { width:10px; height:10px; border-radius:50%; display:inline-block; border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.2); vertical-align:middle; }
+  .dist-badge  { display:inline-flex; align-items:center; gap:.35rem; background:var(--brand-lt); border:1px solid var(--brand); border-radius:20px; padding:.28rem .75rem; font-size:.75rem; font-weight:700; color:var(--brand); }
+  .eta-badge   { display:inline-flex; align-items:center; gap:.35rem; background:var(--info-lt); border:1px solid var(--info); border-radius:20px; padding:.28rem .75rem; font-size:.75rem; font-weight:700; color:var(--info); }
+  .fare-earn   { background:var(--brand-lt); border:1.5px solid var(--brand); border-radius:12px; padding:1rem; display:flex; justify-content:space-between; align-items:center; }
+  .action-btn  { width:100%; padding:1rem; border:none; border-radius:14px; font-family:var(--font-b); font-size:1rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:.6rem; transition:all .2s; }
+  .btn-start   { background:var(--info-lt); color:var(--info); border:1.5px solid var(--info); }
+  .btn-start:hover  { background:var(--info); color:#fff; }
+  .btn-finish  { background:var(--brand-lt); color:var(--brand); border:1.5px solid var(--brand); }
+  .btn-finish:hover { background:var(--brand); color:#fff; }
+  .route-pt    { display:flex; align-items:flex-start; gap:.6rem; font-size:.88rem; }
+  .rdot        { width:9px; height:9px; border-radius:50%; flex-shrink:0; margin-top:.3rem; }
+  .rline-v     { width:2px; height:14px; margin-left:3.5px; background:var(--border-md,#C8D0DC); }
+  @keyframes gpsPulse { 0%,100%{box-shadow:0 0 0 4px rgba(30,132,73,.2)} 50%{box-shadow:0 0 0 8px rgba(30,132,73,.06)} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:640px">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1.25rem">
+    <div>
+      <div style="font-size:.73rem;color:var(--text-3);margin-bottom:.2rem">Ride</div>
+      <div style="font-family:var(--font-h);font-size:1.3rem;font-weight:800">#{{ booking._id[:8].upper() }}</div>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+      {% set st=booking.status %}
+      {% if st=='confirmed'    %}<span class="badge badge-warning">Assigned</span>
+      {% elif st=='in_progress'%}<span class="badge badge-info pulse-anim">🔴 Live</span>
+      {% elif st=='completed'  %}<span class="badge badge-success">✓ Done</span>
+      {% elif st=='cancelled'  %}<span class="badge badge-danger">Cancelled</span>{% endif %}
+      <a href="/rides/" class="btn btn-secondary btn-sm">← Back</a>
+    </div>
+  </div>
+
+  <!-- ══ MAP ══ -->
+  <div style="margin-bottom:1.25rem">
+    <div class="map-toolbar">
+      <div>
+        <div style="font-family:var(--font-h);font-weight:700;font-size:.92rem" id="drv-map-title">
+          {% if booking.status=='in_progress' %}🔴 Live Ride Map{% else %}📍 Customer Location{% endif %}
+        </div>
+        <div style="font-size:.72rem;color:var(--text-3);margin-top:.1rem" id="drv-map-status">
+          Getting your GPS location...
+        </div>
+      </div>
+      <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center" id="drv-dist-badges">
+        {% if booking.distance_km %}
+        <span class="dist-badge"><i class="fa fa-road"></i> {{ booking.distance_km }}km</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div id="driver-ride-map">
+      <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-3);font-size:.85rem">
+        <i class="fa fa-spinner spin" style="margin-right:.5rem"></i> Loading map...
+      </div>
+    </div>
+
+    <div class="map-legend">
+      <span><span class="leg-dot" style="background:#1E8449"></span> 🛺 You (Driver)</span>
+      <span><span class="leg-dot" style="background:#2196F3"></span> Customer Pickup</span>
+      {% if booking.dropoff_lat and booking.dropoff_lat != 0 %}
+      <span><span class="leg-dot" style="background:#C0392B"></span> Drop-off</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Customer card -->
+  {% if customer %}
+  <div class="card card-p" style="margin-bottom:1.1rem;display:flex;align-items:center;gap:1rem">
+    <div style="width:46px;height:46px;border-radius:50%;border:2px solid var(--brand);overflow:hidden;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">
+      {% if customer.avatar %}<img src="{{ customer.avatar }}" style="width:100%;height:100%;object-fit:cover">{% else %}👤{% endif %}
+    </div>
+    <div style="flex:1">
+      <div style="font-weight:700;font-size:.95rem">{{ customer.name }}</div>
+      <div style="font-size:.8rem;color:var(--text-3)">{{ customer.email }}</div>
+      {% if customer.phone %}<div style="font-size:.78rem;color:var(--text-3)">📱 {{ customer.phone }}</div>{% endif %}
+    </div>
+    {% if customer.phone %}
+    <a href="tel:{{ customer.phone }}" class="btn btn-secondary btn-sm"><i class="fa fa-phone"></i> Call</a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Route -->
+  <div style="background:var(--surface-2);border-radius:12px;padding:1rem;margin-bottom:1.1rem">
+    <div class="route-pt"><div class="rdot" style="background:var(--brand)"></div><div><div style="font-size:.65rem;color:var(--text-3)">PICKUP</div>{{ booking.pickup_address }}</div></div>
+    {% if booking.dropoff_address %}
+    <div class="rline-v"></div>
+    <div class="route-pt"><div class="rdot" style="background:var(--danger)"></div><div><div style="font-size:.65rem;color:var(--text-3)">DROP-OFF</div>{{ booking.dropoff_address }}</div></div>
+    {% endif %}
+  </div>
+
+  <!-- Fare -->
+  <div class="fare-earn" style="margin-bottom:1.1rem">
+    <div>
+      <div style="font-size:.72rem;color:var(--text-3);margin-bottom:.2rem"><span data-i18n="ride.totalFare">Total Fare</span></div>
+      <div style="font-family:var(--font-h);font-size:1.3rem;font-weight:800;color:var(--brand)">₹{{ "%.2f"|format(booking.fare) }}</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:.72rem;color:var(--text-3);margin-bottom:.2rem"><span data-i18n="ride.yourEarn">Your Earnings (80%)</span></div>
+      <div style="font-family:var(--font-h);font-size:1.3rem;font-weight:800;color:var(--brand)">₹{{ "%.0f"|format(driver_earn) }}</div>
+    </div>
+  </div>
+
+  {% if booking.notes %}
+  <div style="background:var(--info-lt);border:1px solid var(--info);border-radius:10px;padding:.8rem 1rem;margin-bottom:1.1rem;font-size:.84rem;color:var(--info)">
+    📝 {{ booking.notes }}
+  </div>
+  {% endif %}
+
+  <!-- Action buttons -->
+  {% if booking.status == 'pending' %}
+  <div style="background:var(--warning-lt);border:1.5px solid var(--warning);border-radius:12px;padding:1.1rem;text-align:center">
+    <div style="font-size:1.8rem;margin-bottom:.4rem">⏳</div>
+    <div style="font-weight:700;color:#7D6608;margin-bottom:.25rem">Waiting for Payment</div>
+    <div style="font-size:.83rem;color:#7D6608">
+      Customer is paying ₹{{ "%.0f"|format(booking.fare) }}.
+      The ride will start once payment is confirmed.
+    </div>
+    {% if booking.payment_method == 'cash' %}
+    <div style="margin-top:.6rem;font-size:.8rem;font-weight:600;color:var(--brand)">
+      💵 Cash ride — customer will pay you ₹{{ "%.0f"|format(booking.fare) }} directly.
+      <br>You can start the ride now.
+    </div>
+    <button class="action-btn btn-start" style="margin-top:.75rem" onclick="updateStatus('in_progress')">
+      <i class="fa fa-play"></i> Start Ride (Cash)
+    </button>
+    {% endif %}
+  </div>
+
+  {% elif booking.status == 'confirmed' %}
+  <button class="action-btn btn-start" onclick="updateStatus('in_progress')">
+    <i class="fa fa-play"></i> <span data-i18n="ride.startRide">Start Ride — Customer Picked Up</span>
+  </button>
+  <p style="text-align:center;font-size:.76rem;color:var(--text-3);margin-top:.5rem">Tap when you have picked up the customer</p>
+  {% elif booking.status == 'in_progress' %}
+  <button class="action-btn btn-finish" onclick="updateStatus('completed')">
+    <i class="fa fa-flag-checkered"></i> <span data-i18n="ride.complete">Complete Ride</span>
+  </button>
+  <p style="text-align:center;font-size:.78rem;color:var(--text-3);margin-top:.6rem">
+    ₹{{ "%.0f"|format(driver_earn) }} will be added to your wallet (₹{{ commission|int }} platform fee deducted)
+  </p>
+  {% elif booking.status == 'completed' %}
+  <div style="background:var(--brand-lt);border:1.5px solid var(--brand);border-radius:14px;padding:1.25rem;text-align:center">
+    <div style="font-size:2rem;margin-bottom:.4rem">✅</div>
+    <div style="font-weight:700;color:var(--brand)"><span data-i18n="ride.completed">Ride Completed!</span></div>
+    <div style="font-size:.82rem;color:var(--text-2);margin-top:.3rem">₹{{ "%.0f"|format(driver_earn) }} added to your wallet</div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+'use strict';
+
+var BID  = '{{ booking._id }}';
+var STAT = '{{ booking.status }}';
+var MT   = '8DcBKk2W2VGTtOYBBBgk';
+
+function safeCoord(v){ var n=parseFloat(v); return isNaN(n)?0:n; }
+var PLAT = safeCoord('{{ booking.pickup_lat  or "" }}');
+var PLNG = safeCoord('{{ booking.pickup_lng  or "" }}');
+var DLAT = safeCoord('{{ booking.dropoff_lat or "" }}');
+var DLNG = safeCoord('{{ booking.dropoff_lng or "" }}');
+
+var map       = null;
+var myMarker  = null;
+var myLat     = 0, myLng = 0;
+var gpsTimer  = null;
+
+// ── Init map ──────────────────────────────────────────────────────────────────
+function initMap(){
+  var el = document.getElementById('driver-ride-map');
+  if(!el) return;
+
+  var cx = PLNG || 78.9629, cy = PLAT || 20.5937;
+
+  map = new maplibregl.Map({
+    container: 'driver-ride-map',
+    style: 'https://api.maptiler.com/maps/hybrid-v4/style.json?key=' + MT,
+    center: [cx, cy],
+    zoom: PLAT ? 13 : 5,
+    attributionControl: false
+  });
+  map.addControl(new maplibregl.NavigationControl(), 'top-right');
+  map.addControl(new maplibregl.AttributionControl({compact:true}), 'bottom-right');
+
+  map.on('load', function(){
+    // Customer pickup pin (blue)
+    if(PLAT && PLNG){
+      makePin(PLNG, PLAT, '#2196F3', '📍',
+        '<strong>Customer Pickup</strong><br><small>{{ booking.pickup_address|replace("'","") }}</small>');
+    }
+    // Dropoff pin (red)
+    if(DLAT && DLNG){
+      makePin(DLNG, DLAT, '#C0392B', '🏁',
+        '<strong>Drop-off</strong><br><small>{{ booking.dropoff_address|replace("'","") }}</small>');
+    }
+    // Start GPS — this drives everything
+    startGPS();
+  });
+}
+
+// ── GPS: get position, update server, update map, refresh route ───────────────
+function startGPS(){
+  if(!navigator.geolocation){
+    document.getElementById('drv-map-status').textContent = 'GPS not available on this device';
+    drawRoutePickupOnly();
+    return;
+  }
+
+  // Get position immediately
+  getPosition();
+
+  // Then keep updating
+  if(STAT === 'in_progress' || STAT === 'confirmed'){
+    gpsTimer = setInterval(getPosition, 8000);
+  }
+}
+
+function getPosition(){
+  navigator.geolocation.getCurrentPosition(
+    function(pos){
+      var lat = pos.coords.latitude;
+      var lng = pos.coords.longitude;
+      var moved = haversine(myLat, myLng, lat, lng) > 0.05; // moved >50m
+
+      // Update server
+      fetch('/dashboard/update-location', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({lat:lat, lng:lng})
+      });
+
+      // Update my marker
+      if(!myMarker){
+        var el = document.createElement('div');
+        el.style.cssText = [
+          'width:38px','height:38px','border-radius:50%',
+          'background:#1E8449','border:3px solid #fff',
+          'display:flex','align-items:center','justify-content:center',
+          'font-size:1rem',
+          'box-shadow:0 2px 12px rgba(0,0,0,.3)',
+          'animation:gpsPulse 2s ease-in-out infinite'
+        ].join(';');
+        el.textContent = '🛺';
+        myMarker = new maplibregl.Marker({element:el})
+          .setLngLat([lng, lat])
+          .setPopup(new maplibregl.Popup({offset:22, closeButton:false})
+            .setHTML('<strong>You (Driver)</strong><br><small>Live GPS</small>'))
+          .addTo(map);
+
+        // First time: fit bounds + draw route
+        fitBounds(lat, lng);
+        drawFullRoute(lat, lng);
+      } else {
+        myMarker.setLngLat([lng, lat]);
+        // If moved significantly, redraw route + update distance
+        if(moved){
+          drawFullRoute(lat, lng);
+        }
+      }
+
+      myLat = lat; myLng = lng;
+      var s = document.getElementById('drv-map-status');
+      if(s) s.textContent = '📡 GPS live — ' + new Date().toLocaleTimeString();
+    },
+    function(err){
+      var s = document.getElementById('drv-map-status');
+      if(s) s.textContent = 'GPS denied. Allow location access for live map.';
+      // Still show route between pickup and dropoff
+      if(PLAT && PLNG && DLAT && DLNG) drawRoutePickupOnly();
+    },
+    { enableHighAccuracy:true, timeout:10000, maximumAge:0 }
+  );
+}
+
+// ── Draw route: my position → pickup → dropoff ────────────────────────────────
+function drawFullRoute(lat, lng){
+  var wp = lng+','+lat + ';' + PLNG+','+PLAT;
+  if(DLAT && DLNG) wp += ';' + DLNG+','+DLAT;
+  fetchAndDrawRoute(wp);
+}
+
+function drawRoutePickupOnly(){
+  if(!PLAT || !PLNG || !DLAT || !DLNG) return;
+  fetchAndDrawRoute(PLNG+','+PLAT+';'+DLNG+','+DLAT);
+}
+
+function fetchAndDrawRoute(wp){
+  fetch('https://api.maptiler.com/directions/v2/driving/' + wp + '?key=' + MT)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(!data.routes || !data.routes[0]) return;
+      var route = data.routes[0];
+      var km    = (route.distance / 1000).toFixed(1);
+      var mins  = Math.round(route.duration / 60);
+
+      // Update badges
+      var b = document.getElementById('drv-dist-badges');
+      if(b) b.innerHTML =
+        '<span class="dist-badge"><i class="fa fa-road"></i> ' + km + ' km</span>' +
+        '<span class="eta-badge"><i class="fa fa-clock"></i> ~' + mins + ' min</span>';
+
+      // Range warning
+      if(parseFloat(km) > 40){
+        var s = document.getElementById('drv-map-status');
+        if(s) s.innerHTML = '<span style="color:var(--warning)">⚠️ '+km+'km — approaching max range (40km)</span>';
+      }
+
+      // Draw/update route line
+      if(map.getSource('route')){
+        map.getSource('route').setData({type:'Feature', geometry:route.geometry});
+      } else {
+        map.addSource('route', {type:'geojson', data:{type:'Feature', geometry:route.geometry}});
+        map.addLayer({
+          id:'route-line', type:'line', source:'route',
+          layout:{'line-join':'round','line-cap':'round'},
+          paint:{'line-color':'#1E8449','line-width':4,'line-opacity':.85}
+        });
+      }
+    })
+    .catch(function(){});
+}
+
+// ── Fit bounds to show driver + pickup + dropoff ──────────────────────────────
+function fitBounds(dLat, dLng){
+  var pts = [];
+  if(PLAT && PLNG) pts.push([PLNG, PLAT]);
+  if(DLAT && DLNG) pts.push([DLNG, DLAT]);
+  if(dLat && dLng) pts.push([dLng, dLat]);
+  if(pts.length === 0) return;
+  if(pts.length === 1){ map.flyTo({center:pts[0], zoom:15}); return; }
+  var bounds = new maplibregl.LngLatBounds(pts[0], pts[0]);
+  pts.forEach(function(p){ bounds.extend(p); });
+  map.fitBounds(bounds, {padding:65, maxZoom:15, duration:900});
+}
+
+function makePin(lng, lat, color, emoji, html){
+  var el = document.createElement('div');
+  el.style.cssText='width:34px;height:34px;border-radius:50%;background:'+color+';border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-size:.9rem;box-shadow:0 2px 8px rgba(0,0,0,.25)';
+  el.textContent = emoji;
+  new maplibregl.Marker({element:el}).setLngLat([lng,lat])
+    .setPopup(new maplibregl.Popup({offset:18,closeButton:false}).setHTML(html))
+    .addTo(map);
+}
+
+// ── Haversine distance (km) ───────────────────────────────────────────────────
+function haversine(lat1,lng1,lat2,lng2){
+  if(!lat1||!lat2) return 99;
+  var R=6371,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// ── Update ride status ────────────────────────────────────────────────────────
+window.confirmCashAndComplete = async function() {
+  if (!confirm('Confirm you received ₹{{ "%.0f"|format(booking.fare) }} cash from the customer?')) return;
+  // First confirm cash received
+  await fetch('/rides/{{ booking._id }}/cash-received', {method:'POST'});
+  // Then complete the ride
+  updateStatus('completed');
+};
+
+window.updateStatus = function(status){
+  if(!confirm('Mark ride as '+status.replace('_',' ')+'?')) return;
+  fetch('/rides/'+BID+'/status',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({status:status})
+  })
+  .then(function(r){return r.json();})
+  .then(function(d){ if(d.success) location.reload(); else alert(d.error||'Error'); });
+};
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', initMap);
+} else {
+  initMap();
+}
+
+})();
+</script>
+{% endblock %}

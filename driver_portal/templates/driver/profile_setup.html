@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete Your Profile — Driver Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&family=Noto+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script>(function(){var s=localStorage.getItem('etuktuk-driver-theme')||'system';var r=s==='system'?(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'):s;document.documentElement.setAttribute('data-theme',r);})();</script>
+  <style>
+    :root{--brand:#1E8449;--brand-lt:#E9F7EF;--bg:#F4F6F8;--surface:#fff;--border:#DDE3EC;--text-1:#1A1D23;--text-2:#4A5568;--text-3:#8A94A6;--danger:#C0392B;--danger-lt:#FDEDEC;--warning:#D4AC0D;--warning-lt:#FEF9E7;--info:#2471A3;--info-lt:#EAF4FB;--shadow-lg:0 8px 32px rgba(0,0,0,.12);--radius-lg:18px;--radius-md:12px;--font-h:'Poppins',sans-serif;--font-b:'Noto Sans',sans-serif;}
+    [data-theme="dark"]{--bg:#0E1117;--surface:#161B25;--border:rgba(255,255,255,.08);--text-1:#EDF2F7;--text-2:#A0AEC0;--text-3:#6B7A94;--brand:#2ECC71;--brand-lt:rgba(46,204,113,.12);--info:#5DADE2;--info-lt:rgba(93,173,226,.12);--warning:#F1C40F;--warning-lt:rgba(241,196,15,.12);}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:var(--font-b);background:var(--bg);color:var(--text-1);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem 1rem;}
+    .setup-card{width:100%;max-width:500px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);overflow:hidden;}
+    .setup-header{padding:2rem 2rem 1.5rem;background:linear-gradient(135deg,var(--brand),#166038);color:#fff;text-align:center;}
+    .setup-header h1{font-family:var(--font-h);font-size:1.4rem;font-weight:800;margin-bottom:.3rem;}
+    .setup-header p{font-size:.85rem;opacity:.85;}
+    .setup-body{padding:2rem;}
+    .steps-indicator{display:flex;gap:.5rem;margin-bottom:1.75rem;}
+    .step-pill{flex:1;height:4px;border-radius:2px;background:var(--border);}
+    .step-pill.done{background:var(--brand);}
+    .form-group{margin-bottom:1.1rem;}
+    .form-label{display:block;font-size:.78rem;font-weight:600;color:var(--text-2);margin-bottom:.38rem;}
+    .form-control{width:100%;padding:.72rem 1rem;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-md);color:var(--text-1);font-family:var(--font-b);font-size:.9rem;outline:none;transition:border-color .18s;}
+    .form-control:focus{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-lt);}
+    .form-control::placeholder{color:var(--text-3);}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+    .btn-submit{width:100%;padding:.85rem;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-md);font-family:var(--font-b);font-size:.95rem;font-weight:700;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:.5rem;margin-top:.5rem;}
+    .btn-submit:hover{background:#166038;transform:translateY(-1px);}
+    .info-box{background:var(--info-lt);border:1px solid var(--info);border-radius:var(--radius-md);padding:.85rem 1rem;font-size:.83rem;color:var(--info);display:flex;gap:.5rem;margin-bottom:1.5rem;}
+    [data-theme="dark"] .info-box{color:var(--info);}
+    .flash-danger{padding:.7rem 1rem;background:var(--danger-lt);border:1px solid var(--danger);border-radius:var(--radius-md);font-size:.85rem;color:var(--danger);margin-bottom:1rem;}
+    @media(max-width:480px){.form-row{grid-template-columns:1fr;}}
+  </style>
+</head>
+<body>
+<div class="setup-card">
+  <div class="setup-header">
+    <div style="font-size:2.5rem;margin-bottom:.6rem">🛺</div>
+    <h1>Complete Your Driver Profile</h1>
+    <p>Required to activate your account and start accepting rides</p>
+  </div>
+  <div class="setup-body">
+    <!-- Progress -->
+    <div class="steps-indicator">
+      <div class="step-pill done"></div>
+      <div class="step-pill done"></div>
+      <div class="step-pill"></div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat,msg in messages %}
+      <div class="flash-{{ cat }}" style="padding:.7rem 1rem;border-radius:10px;margin-bottom:1rem;font-size:.85rem;{% if cat=='danger' %}background:var(--danger-lt);border:1px solid var(--danger);color:var(--danger){% elif cat=='warning' %}background:var(--warning-lt);border:1px solid var(--warning);color:#7D6608{% elif cat=='info' %}background:var(--info-lt);border:1px solid var(--info);color:var(--info){% endif %}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="info-box">
+      <i class="fa fa-circle-info" style="margin-top:.1rem;flex-shrink:0"></i>
+      <span>You signed in with Google. Please fill in your vehicle and contact details — this information will be reviewed by the admin before you can go online.</span>
+    </div>
+
+    <form method="POST">
+      <div class="form-group">
+        <label class="form-label">Full Name *</label>
+        <input type="text" name="name" class="form-control"
+               value="{{ driver.name }}" placeholder="Your full name" required>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Phone Number *</label>
+          <input type="tel" name="phone" class="form-control"
+                 placeholder="+91 98765 43210" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Vehicle Number *</label>
+          <input type="text" name="vehicle_number" class="form-control"
+                 placeholder="MH12-EV-0001" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Driving License Number *</label>
+        <input type="text" name="license_no" class="form-control"
+               placeholder="MH1234567890" required>
+      </div>
+
+      <div style="background:var(--brand-lt);border:1px solid var(--brand);border-radius:var(--radius-md);padding:.85rem 1rem;font-size:.82rem;color:var(--brand);margin-bottom:1.25rem;display:flex;gap:.5rem">
+        <i class="fa fa-shield-halved" style="margin-top:.1rem;flex-shrink:0"></i>
+        <span>Your license and vehicle details are kept secure and only visible to platform admins.</span>
+      </div>
+
+      <button type="submit" class="btn-submit">
+        <i class="fa fa-check-circle"></i> Complete Profile & Continue
+      </button>
+    </form>
+
+    <p style="text-align:center;margin-top:1.25rem;font-size:.8rem;color:var(--text-3)">
+      <a href="/auth/logout" style="color:var(--text-3)">Sign out and try a different account</a>
+    </p>
+  </div>
+</div>
+<script>
+function togglePw(inputId,btn){var inp=document.getElementById(inputId);if(!inp)return;inp.type=inp.type==='password'?'text':'password';btn.textContent=inp.type==='password'?'👁️':'🙈';}
+function setLang(l){localStorage.setItem('etg-lang',l);}
+</script>
+</body>
+</html>

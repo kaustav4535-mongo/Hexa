@@ -1,0 +1,24 @@
+{% extends "customer/base.html" %}
+{% block title %}Edit Profile — E-TukTukGo{% endblock %}
+{% block content %}
+<div class="page-wrap-sm" style="padding-top:2rem">
+  <h1 style="font-family:var(--font-h);font-size:1.5rem;font-weight:800;margin-bottom:1.5rem">Edit Profile</h1>
+  <div class="card card-p">
+    {% if not user.phone and user.auth_provider == 'google' %}
+    <div style="background:var(--info-lt);border:1px solid var(--info);border-radius:var(--radius-md);padding:.9rem 1rem;margin-bottom:1.2rem;font-size:.85rem;color:var(--info);display:flex;gap:.5rem">
+      <i class="fa fa-circle-info" style="margin-top:.1rem;flex-shrink:0"></i>
+      <span>Please add your phone number to complete your profile and start booking rides.</span>
+    </div>
+    {% endif %}
+    <form method="POST">
+      <div class="form-group"><label class="form-label">Full Name *</label><input type="text" name="name" class="form-control" value="{{ user.name }}" required></div>
+      <div class="form-group"><label class="form-label">Phone Number *</label><input type="tel" name="phone" class="form-control" value="{{ user.phone or '' }}" placeholder="+91 98765 43210" required></div>
+      <div class="form-group"><label class="form-label">Email (read-only)</label><input type="email" class="form-control" value="{{ user.email }}" disabled style="opacity:.5;cursor:not-allowed"></div>
+      <div style="display:flex;gap:.75rem;margin-top:.5rem">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="/profile/" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

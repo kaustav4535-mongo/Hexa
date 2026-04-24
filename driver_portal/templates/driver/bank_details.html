@@ -1,0 +1,193 @@
+{% extends "driver/base.html" %}
+{% block title %}Payment Details — Driver Hub{% endblock %}
+{% block page_title %}Payment Details{% endblock %}
+
+{% block content %}
+<div style="max-width:540px">
+
+  <!-- Wallet summary -->
+  <div style="background:linear-gradient(135deg,var(--brand),var(--brand-dk));border-radius:var(--radius-lg);padding:1.75rem;color:#fff;margin-bottom:1.5rem;text-align:center">
+    <div style="font-size:.8rem;opacity:.8;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem"><span data-i18n="earn.balance">Available Wallet Balance</span></div>
+    <div style="font-family:var(--font-h);font-size:2.8rem;font-weight:900">₹{{ "%.2f"|format(driver.wallet or 0) }}</div>
+    <div style="font-size:.8rem;opacity:.7;margin-top:.3rem">Minimum withdrawal: ₹100</div>
+  </div>
+
+  <!-- Razorpay X info box -->
+  <div style="background:var(--info-lt);border:1px solid var(--info);border-radius:var(--radius-md);padding:1rem 1.15rem;margin-bottom:1.5rem;font-size:.84rem;color:var(--info);display:flex;gap:.6rem">
+    <i class="fa fa-circle-info" style="margin-top:.15rem;flex-shrink:0"></i>
+    <div>
+      <strong><span data-i18n="bank.howWork">How withdrawals work</span>:</strong> Save your UPI ID or bank details below. Then click "<span data-i18n="earn.reqWithdraw">Request Withdrawal</span>" — admin will process your payout via Razorpay within 24 hours. You'll receive money directly to your UPI/bank.
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div style="display:flex;gap:.5rem;margin-bottom:1.5rem" id="tabs">
+    <button class="btn btn-primary" id="tab-upi" onclick="showTab('upi')">📱 UPI (Faster)</button>
+    <button class="btn btn-secondary" id="tab-bank" onclick="showTab('bank')">🏦 Bank Account</button>
+  </div>
+
+  <!-- UPI Form -->
+  <div id="form-upi">
+    <div class="card card-p" style="margin-bottom:1.5rem">
+      <div class="card-title"><i class="fa fa-mobile-screen" style="color:var(--brand)"></i> UPI Details</div>
+      <form method="POST" action="/earnings/bank-details">
+        <input type="hidden" name="payout_method" value="upi">
+        <div class="form-group">
+          <label class="form-label">Your UPI ID *</label>
+          <input type="text" name="upi_id" class="form-control"
+                 placeholder="yourname@paytm / phone@upi / number@ybl"
+                 value="{{ driver.upi_id or '' }}" required>
+          <div style="font-size:.75rem;color:var(--text-3);margin-top:.3rem">
+            Examples: 9876543210@paytm &nbsp;·&nbsp; raju@okicici &nbsp;·&nbsp; raju@upi
+          </div>
+        </div>
+        {% if driver.payout_method == 'upi' and driver.upi_id %}
+        <div style="background:var(--brand-lt);border:1px solid var(--brand);border-radius:var(--radius-sm);padding:.65rem .9rem;margin-bottom:1rem;font-size:.83rem;color:var(--brand)">
+          ✓ Current UPI: <strong>{{ driver.upi_id }}</strong>
+        </div>
+        {% endif %}
+        <button type="submit" class="btn btn-primary"><i class="fa fa-check"></i> <span data-i18n="bank.saveUpi">Save UPI Details</span></button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bank Form -->
+  <div id="form-bank" style="display:none">
+    <div class="card card-p" style="margin-bottom:1.5rem">
+      <div class="card-title"><i class="fa fa-building-columns" style="color:var(--brand)"></i> Bank Account Details</div>
+      <form method="POST" action="/earnings/bank-details">
+        <input type="hidden" name="payout_method" value="bank">
+        <div class="form-group">
+          <label class="form-label">Account Holder Name *</label>
+          <input type="text" name="account_holder_name" class="form-control"
+                 placeholder="Full name as on bank passbook"
+                 value="{{ driver.name }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Bank Account Number *</label>
+          <input type="text" name="bank_account_no" class="form-control"
+                 placeholder="Enter your account number"
+                 value="{{ driver.bank_account_no or '' }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">IFSC Code *</label>
+          <input type="text" name="bank_ifsc" class="form-control"
+                 placeholder="e.g. SBIN0001234"
+                 value="{{ driver.bank_ifsc or '' }}"
+                 oninput="this.value=this.value.toUpperCase()" required>
+          <div style="font-size:.75rem;color:var(--text-3);margin-top:.3rem">
+            Find IFSC on your cheque book or bank passbook
+          </div>
+        </div>
+        {% if driver.payout_method == 'bank' and driver.bank_account_no %}
+        <div style="background:var(--brand-lt);border:1px solid var(--brand);border-radius:var(--radius-sm);padding:.65rem .9rem;margin-bottom:1rem;font-size:.83rem;color:var(--brand)">
+          ✓ Current: ****{{ driver.bank_account_no[-4:] }} &nbsp;·&nbsp; {{ driver.bank_ifsc }}
+        </div>
+        {% endif %}
+        <button type="submit" class="btn btn-primary"><i class="fa fa-check"></i> <span data-i18n="bank.saveBank">Save Bank Details</span></button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Withdraw button -->
+  {% if (driver.upi_id or driver.bank_account_no) and (driver.wallet or 0) >= 100 %}
+  <div class="card card-p" style="margin-bottom:1.5rem;border-color:var(--brand)">
+    <div class="card-title"><i class="fa fa-money-bill-transfer" style="color:var(--brand)"></i> <span data-i18n="earn.reqWithdraw">Request Withdrawal</span></div>
+    <div style="font-size:.87rem;color:var(--text-2);margin-bottom:1rem">
+      You will receive <strong>₹{{ "%.2f"|format(driver.wallet or 0) }}</strong> to your
+      {% if driver.payout_method == 'upi' %}<strong>{{ driver.upi_id }}</strong>{% else %}<strong>bank account ending ****{{ (driver.bank_account_no or '')[-4:] }}</strong>{% endif %}
+      within 24 hours.
+    </div>
+    <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+      <input type="number" id="withdraw-amount" class="form-control" style="max-width:160px"
+             value="{{ "%.0f"|format(driver.wallet or 0) }}"
+             min="100" max="{{ "%.0f"|format(driver.wallet or 0) }}" step="1">
+      <button class="btn btn-primary" onclick="requestWithdrawal()">
+        <i class="fa fa-paper-plane"></i> <span data-i18n="earn.reqWithdraw">Request Withdrawal</span>
+      </button>
+    </div>
+    <div style="font-size:.75rem;color:var(--text-3);margin-top:.6rem">
+      ₹100 minimum · Balance: ₹{{ "%.2f"|format(driver.wallet or 0) }}
+    </div>
+  </div>
+  {% elif (driver.wallet or 0) < 100 %}
+  <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-md);padding:1rem;text-align:center;color:var(--text-3);font-size:.87rem;margin-bottom:1.5rem">
+    💰 Complete rides to earn ₹100+ before requesting withdrawal.
+  </div>
+  {% elif not (driver.upi_id or driver.bank_account_no) %}
+  <div style="background:var(--warning-lt);border:1px solid var(--warning);border-radius:var(--radius-md);padding:1rem;color:#7D6608;font-size:.87rem;margin-bottom:1.5rem">
+    ⚠️ Save your UPI or bank details above to enable withdrawals.
+  </div>
+  {% endif %}
+
+  <!-- Past withdrawals -->
+  {% if withdrawals %}
+  <div class="card" style="margin-bottom:1.5rem">
+    <div class="card-p" style="border-bottom:1px solid var(--border)">
+      <div class="card-title" style="margin-bottom:0"><span data-i18n="bank.history">Withdrawal History</span></div>
+    </div>
+    <div class="table-wrap">
+      <table class="tbl">
+        <thead><tr><th>Date</th><th>Amount</th><th>Method</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for w in withdrawals %}
+          <tr>
+            <td style="font-size:.78rem;color:var(--text-3)">{{ w.created_at[:10] if w.created_at else '—' }}</td>
+            <td style="color:var(--brand);font-weight:700">₹{{ "%.2f"|format(w.amount) }}</td>
+            <td style="font-size:.82rem;text-transform:uppercase">{{ w.payout_method }}</td>
+            <td>
+              {% if w.status == 'completed' %}<span class="badge badge-success">✓ Paid</span>
+              {% elif w.status == 'pending'  %}<span class="badge badge-warning">⏳ Pending</span>
+              {% elif w.status == 'failed'   %}<span class="badge badge-danger">✗ Failed</span>
+              {% else %}<span class="badge badge-muted">{{ w.status }}</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <a href="/earnings/" class="btn btn-secondary btn-sm">← Back to Earnings</a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showTab(tab) {
+  document.getElementById('form-upi').style.display  = tab==='upi'  ? '' : 'none';
+  document.getElementById('form-bank').style.display = tab==='bank' ? '' : 'none';
+  document.getElementById('tab-upi').className  = tab==='upi'  ? 'btn btn-primary'   : 'btn btn-secondary';
+  document.getElementById('tab-bank').className = tab==='bank' ? 'btn btn-primary'   : 'btn btn-secondary';
+}
+// Show current method tab by default
+{% if driver.payout_method == 'bank' %}showTab('bank');{% else %}showTab('upi');{% endif %}
+
+async function requestWithdrawal() {
+  var amount = parseFloat(document.getElementById('withdraw-amount').value);
+  if (!amount || amount < 100) { alert('Minimum withdrawal is ₹100'); return; }
+  if (!confirm('Request withdrawal of ₹' + amount.toFixed(2) + '?')) return;
+
+  var btn = event.target;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa fa-spinner spin"></i> Submitting...';
+
+  var r = await fetch('/earnings/request-withdrawal', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({amount: amount})
+  });
+  var d = await r.json();
+  btn.disabled = false;
+  btn.innerHTML = '<i class="fa fa-paper-plane"></i> <span data-i18n="earn.reqWithdraw">Request Withdrawal</span>';
+
+  if (d.success) {
+    alert('✅ ' + d.message);
+    location.reload();
+  } else {
+    alert('❌ ' + d.error);
+  }
+}
+</script>
+{% endblock %}

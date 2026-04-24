@@ -1,0 +1,73 @@
+{% extends "customer/base.html" %}
+{% block title %}My Rides — E-TukTukGo{% endblock %}
+{% block content %}
+<div class="page-wrap">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:.75rem">
+    <h1 style="font-family:var(--font-h);font-size:1.5rem;font-weight:800"><span data-i18n="mybook.title">My Rides</span></h1>
+    <a href="/booking/new" class="btn btn-primary"><i class="fa fa-plus"></i> Book New Ride</a>
+  </div>
+  <!-- Filter tabs -->
+  <div style="display:flex;gap:.5rem;margin-bottom:1.25rem;flex-wrap:wrap">
+    {% for label, val in [('All','all'),('Pending','pending'),('Confirmed','confirmed'),('Active','in_progress'),('Done','completed'),('Cancelled','cancelled')] %}
+    <button class="btn btn-secondary btn-sm filter-tab" data-filter="{{ val }}" onclick="filterBy('{{ val }}',this)">{{ label }}</button>
+    {% endfor %}
+  </div>
+  {% if bookings %}
+  <div style="display:flex;flex-direction:column;gap:.75rem" id="booking-list">
+    {% for b in bookings %}
+    <div class="card" data-status="{{ b.status }}" style="transition:border-color .15s">
+      <div style="padding:1.1rem;display:grid;grid-template-columns:auto 1fr auto;gap:1rem;align-items:center">
+        <div style="width:42px;height:42px;border-radius:var(--radius-md);background:var(--brand-lt);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">🛺</div>
+        <div>
+          <div style="font-family:var(--font-h);font-weight:700;font-size:.88rem;color:var(--brand)">#{{ b._id[:8].upper() }}</div>
+          <div style="font-size:.85rem;color:var(--text-2);margin:.15rem 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px">📍 {{ b.pickup_address }}{% if b.dropoff_address %} → {{ b.dropoff_address }}{% endif %}</div>
+          <div style="font-size:.75rem;color:var(--text-3)">{{ b.booking_type|capitalize }} · {{ b.hours }}h{% if b.distance_km %} · {{ b.distance_km }}km{% endif %} · {{ b.created_at[:10] if b.created_at else '' }}</div>
+        </div>
+        <div style="text-align:right">
+          {% set st=b.status %}
+          {% if st=='pending' %}<span class="badge badge-warning">Pending</span>
+          {% elif st=='confirmed' %}<span class="badge badge-success">Confirmed</span>
+          {% elif st=='in_progress' %}<span class="badge badge-info">Active</span>
+          {% elif st=='completed' %}<span class="badge badge-muted">Done</span>
+          {% elif st=='cancelled' %}<span class="badge badge-danger">Cancelled</span>{% endif %}
+          <div style="font-family:var(--font-h);font-size:1rem;font-weight:800;margin:.3rem 0">₹{{ "%.0f"|format(b.fare) }}</div>
+          {% if b.payment_locked and b.status not in ('cancelled','completed') %}
+          <div style="font-size:.72rem;color:var(--warning)">🔒 Locked</div>
+          {% elif b.payment_status=='paid' %}
+          <div style="font-size:.72rem;color:var(--brand)">✓ Paid</div>
+          {% else %}
+          <div style="font-size:.72rem;color:var(--danger)">Unpaid</div>
+          {% endif %}
+          <div style="margin-top:.4rem;display:flex;gap:.4rem;justify-content:flex-end">
+            <a href="/booking/{{ b._id }}" class="btn btn-secondary btn-sm"><span data-i18n="mybook.viewBtn">View</span></a>
+            {% if b.payment_status!='paid' and not b.payment_locked and b.status not in ('cancelled','completed') %}
+            <a href="/payment/checkout/{{ b._id }}" class="btn btn-primary btn-sm">Pay</a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:5rem 2rem;color:var(--text-3)">
+    <div style="font-size:3.5rem;margin-bottom:1rem">🛺</div>
+    <h3 style="font-family:var(--font-h);font-size:1.2rem;font-weight:700;color:var(--text-1);margin-bottom:.5rem"><span data-i18n="mybook.noRides">No rides yet</span></h3>
+    <p style="margin-bottom:1.5rem">Book your first electric TukTuk ride today!</p>
+    <a href="/booking/new" class="btn btn-primary btn-lg">Book Now</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function filterBy(val, btn) {
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('btn-primary'));
+  btn.classList.add('btn-primary');
+  document.querySelectorAll('#booking-list > div').forEach(item => {
+    item.style.display = (val==='all' || item.dataset.status===val) ? '' : 'none';
+  });
+}
+document.querySelector('[data-filter="all"]').classList.add('btn-primary');
+</script>
+{% endblock %}

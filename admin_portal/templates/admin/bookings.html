@@ -1,0 +1,37 @@
+{% extends "admin/base.html" %}
+{% block title %}Bookings — Admin{% endblock %}
+{% block page_title %}Booking Management{% endblock %}
+{% block content %}
+<div class="ph"><div><div class="ph-title">Bookings</div><div class="ph-sub">{{ bookings|length }} found</div></div><a href="/bookings/api/export" class="btn btn-secondary btn-sm"><i class="fa fa-download"></i> Export CSV</a></div>
+<div class="card card-p fade-up" style="margin-bottom:1.1rem">
+  <form method="GET" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+    <div style="flex:1;min-width:180px" class="search-wrap"><i class="fa fa-search search-icon"></i><input type="text" name="q" class="form-control" placeholder="Customer, address..." value="{{ search }}"></div>
+    <select name="status" class="form-control" style="width:auto"><option value="">All Status</option>{% for s in ['pending','confirmed','in_progress','completed','cancelled'] %}<option value="{{ s }}" {% if status_filter==s %}selected{% endif %}>{{ s|capitalize }}</option>{% endfor %}</select>
+    <select name="type" class="form-control" style="width:auto"><option value="">All Types</option>{% for t in ['now','advance','hourly'] %}<option value="{{ t }}" {% if type_filter==t %}selected{% endif %}>{{ t|capitalize }}</option>{% endfor %}</select>
+    <button type="submit" class="btn btn-secondary btn-sm"><i class="fa fa-filter"></i></button>
+    <a href="/bookings/" class="btn btn-secondary btn-sm">Clear</a>
+  </form>
+</div>
+<div class="card fade-up">
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>ID</th><th>Customer</th><th>Pickup</th><th>Type</th><th>Fare</th><th>Payment</th><th>Status</th><th>Date</th><th></th></tr></thead>
+      <tbody>
+        {% if bookings %}{% for b in bookings %}
+        <tr>
+          <td class="td-id">#{{ b._id[:8].upper() }}</td>
+          <td style="font-size:.82rem;font-weight:600">{{ b.get('customer_name','—') }}</td>
+          <td style="font-size:.77rem;color:var(--text-3);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ b.pickup_address }}</td>
+          <td><span class="badge b-muted">{{ b.booking_type }}</span></td>
+          <td style="color:var(--brand);font-weight:700">₹{{ "%.0f"|format(b.fare) }}</td>
+          <td>{% if b.payment_status=='paid' %}<span class="badge b-green">Paid</span>{% elif b.payment_locked %}<span class="badge b-warn">🔒 Locked</span>{% else %}<span class="badge b-red">Unpaid</span>{% endif %}</td>
+          <td>{% set st=b.status %}{% if st=='pending' %}<span class="badge b-orange">Pending</span>{% elif st=='confirmed' %}<span class="badge b-blue">Confirmed</span>{% elif st=='in_progress' %}<span class="badge b-green">Active</span>{% elif st=='completed' %}<span class="badge b-muted">Done</span>{% elif st=='cancelled' %}<span class="badge b-red">Cancelled</span>{% endif %}</td>
+          <td style="font-size:.73rem;color:var(--text-3)">{{ b.created_at[:10] if b.created_at else '—' }}</td>
+          <td><a href="/bookings/{{ b._id }}" class="btn btn-secondary btn-sm btn-icon"><i class="fa fa-eye"></i></a></td>
+        </tr>
+        {% endfor %}{% else %}<tr><td colspan="9" class="empty-cell">No bookings found.</td></tr>{% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

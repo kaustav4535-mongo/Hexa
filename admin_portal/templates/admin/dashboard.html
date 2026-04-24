@@ -1,0 +1,196 @@
+{% extends "admin/base.html" %}
+{% block title %}Dashboard — Admin{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+  .dash-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin-bottom:1.25rem; }
+  .span-2    { grid-column:1/-1; }
+
+  .rev-chart { display:flex; align-items:flex-end; gap:.4rem; height:90px; margin-top:1rem; }
+  .rc-col    { flex:1; display:flex; flex-direction:column; align-items:center; gap:.25rem; }
+  .rc-bar    { width:100%; border-radius:4px 4px 0 0; background:var(--brand); min-height:3px; transition:height .5s ease; cursor:default; }
+  .rc-lbl    { font-size:.6rem; color:var(--text-3); }
+
+  .pending-item { display:flex; align-items:center; gap:.7rem; padding:.6rem 0; border-bottom:1px solid var(--border); }
+  .pending-item:last-child { border-bottom:none; }
+  .p-ava    { width:30px; height:30px; border-radius:50%; background:var(--accent-lt); border:1.5px solid var(--accent); display:flex; align-items:center; justify-content:center; font-size:.85rem; flex-shrink:0; }
+  .p-name   { font-weight:600; font-size:.845rem; }
+  .p-detail { font-size:.72rem; color:var(--text-3); }
+
+  .bk-row   { display:flex; align-items:center; gap:.7rem; padding:.58rem 0; border-bottom:1px solid var(--border); }
+  .bk-row:last-child { border-bottom:none; }
+  .bk-dot   { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .bk-id    { font-size:.78rem; font-weight:700; color:var(--brand); }
+  .bk-info  { flex:1; min-width:0; }
+  .bk-addr  { font-size:.72rem; color:var(--text-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .qa-card { display:block; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.1rem; text-decoration:none; transition:all .18s; }
+  .qa-card:hover { border-color:var(--brand); transform:translateY(-2px); box-shadow:var(--shadow-md); text-decoration:none; }
+
+  @media(max-width:700px){ .dash-grid{grid-template-columns:1fr;} .span-2{grid-column:auto;} }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Stats -->
+<div class="stats-grid fade-up">
+  <div class="stat-card sc-green">
+    <div class="s-icon g"><i class="fa fa-indian-rupee-sign"></i></div>
+    <div class="s-val">₹{{ "%.0f"|format(total_revenue) }}</div>
+    <div class="s-lbl">Total Revenue</div>
+  </div>
+  <div class="stat-card sc-blue">
+    <div class="s-icon b"><i class="fa fa-users"></i></div>
+    <div class="s-val" id="lv-users">{{ total_users }}</div>
+    <div class="s-lbl">Customers</div>
+  </div>
+  <div class="stat-card sc-orange">
+    <div class="s-icon o"><i class="fa fa-id-card"></i></div>
+    <div class="s-val">{{ total_drivers }}</div>
+    <div class="s-lbl">Drivers {% if pending_drivers>0 %}<span class="badge b-orange" style="font-size:.6rem">{{ pending_drivers }} pending</span>{% endif %}</div>
+  </div>
+  <div class="stat-card sc-purple">
+    <div class="s-icon p"><i class="fa fa-route"></i></div>
+    <div class="s-val" id="lv-rides">{{ active_rides }}</div>
+    <div class="s-lbl">Active Rides</div>
+  </div>
+  <div class="stat-card sc-green">
+    <div class="s-icon g"><i class="fa fa-circle-dot"></i></div>
+    <div class="s-val" id="lv-drivers">{{ active_drivers }}</div>
+    <div class="s-lbl">Drivers Online</div>
+  </div>
+  <div class="stat-card sc-red">
+    <div class="s-icon r"><i class="fa fa-clock"></i></div>
+    <div class="s-val" id="lv-pending">{{ pending_bookings }}</div>
+    <div class="s-lbl">Pending Bookings</div>
+  </div>
+</div>
+
+<div class="dash-grid">
+
+  <!-- Revenue Chart -->
+  <div class="card card-p fade-up">
+    <div class="card-title"><i class="fa fa-chart-line" style="color:var(--brand)"></i> Revenue — Last 7 Days</div>
+    {% if rev_chart %}
+      {% set max_r = rev_chart|map(attribute=1)|max %}
+      <div class="rev-chart">
+        {% for day,amt in rev_chart %}
+        {% set pct = ((amt/max_r)*100) if max_r>0 else 0 %}
+        <div class="rc-col">
+          <div class="rc-bar" style="height:{{ pct }}%" title="₹{{ amt|int }} on {{ day }}"></div>
+          <div class="rc-lbl">{{ day[5:] }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      <div style="margin-top:.6rem;display:flex;justify-content:space-between;font-size:.75rem;color:var(--text-3)">
+        <span>Platform cut: <strong style="color:var(--brand)">₹{{ "%.0f"|format(platform_cut) }}</strong></span>
+        <a href="/payments/" class="btn btn-secondary btn-sm">Full Report</a>
+      </div>
+    {% else %}
+      <div style="text-align:center;padding:2rem;color:var(--text-3);font-size:.85rem">No payment data yet.</div>
+    {% endif %}
+  </div>
+
+  <!-- Pending Approvals -->
+  <div class="card card-p fade-up">
+    <div class="card-title">
+      <i class="fa fa-user-clock" style="color:var(--accent)"></i> Pending Driver Approvals
+      {% if pending_drv %}<span class="badge b-orange" style="margin-left:.4rem">{{ pending_drv|length }}</span>{% endif %}
+    </div>
+    {% if pending_drv %}
+      {% for d in pending_drv %}
+      <div class="pending-item">
+        <div class="p-ava">🧑</div>
+        <div style="flex:1;min-width:0">
+          <div class="p-name">{{ d.name }}</div>
+          <div class="p-detail">{{ d.vehicle_number or 'No vehicle' }} · {{ d.email }}</div>
+        </div>
+        <a href="/drivers/{{ d._id }}" class="btn btn-warning btn-sm">Review</a>
+      </div>
+      {% endfor %}
+      {% if pending_drivers > 5 %}
+      <a href="/drivers/?approval=pending" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center;margin-top:.7rem">View all {{ pending_drivers }} →</a>
+      {% endif %}
+    {% else %}
+      <div style="text-align:center;padding:1.5rem;color:var(--text-3);font-size:.85rem">✓ No pending approvals</div>
+    {% endif %}
+  </div>
+
+  <!-- Recent Bookings -->
+  <div class="card card-p span-2 fade-up">
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+      <span><i class="fa fa-list" style="color:var(--info)"></i> Recent Bookings</span>
+      <div style="display:flex;gap:.5rem">
+        <a href="/bookings/api/export" class="btn btn-secondary btn-sm"><i class="fa fa-download"></i> CSV</a>
+        <a href="/bookings/" class="btn btn-secondary btn-sm">View All →</a>
+      </div>
+    </div>
+    {% if recent_bookings %}
+    <div>
+      {% for b in recent_bookings %}
+      {% set st=b.status %}
+      <div class="bk-row">
+        <div class="bk-dot" style="background:
+          {%if st=='completed'%}var(--brand){%elif st=='in_progress'%}var(--info){%elif st=='confirmed'%}var(--accent){%elif st=='cancelled'%}var(--danger){%else%}var(--text-3){%endif%}"></div>
+        <div class="bk-info">
+          <div class="bk-id">#{{ b._id[:8].upper() }}</div>
+          <div class="bk-addr">{{ b.get('customer_name','—') }} · {{ b.pickup_address }}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-weight:700;font-size:.87rem">₹{{ "%.0f"|format(b.fare) }}</div>
+          <div style="font-size:.68rem;color:var(--text-3)">{{ b.created_at[:10] if b.created_at else '' }}</div>
+        </div>
+        <a href="/bookings/{{ b._id }}" class="btn btn-secondary btn-sm btn-icon"><i class="fa fa-chevron-right"></i></a>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+      <div style="text-align:center;padding:1.5rem;color:var(--text-3);font-size:.85rem">No bookings yet.</div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- Quick Actions -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem" class="fade-up">
+  <a href="/drivers/?approval=pending" class="qa-card">
+    <div style="font-size:1.5rem;margin-bottom:.5rem">👤</div>
+    <div style="font-family:var(--font-h);font-weight:700;font-size:.88rem;margin-bottom:.2rem">Approve Drivers</div>
+    <div style="font-size:.75rem;color:var(--text-3)">{{ pending_drivers }} pending review</div>
+  </a>
+  <a href="/pricing/" class="qa-card">
+    <div style="font-size:1.5rem;margin-bottom:.5rem">💰</div>
+    <div style="font-family:var(--font-h);font-weight:700;font-size:.88rem;margin-bottom:.2rem">Pricing Engine</div>
+    <div style="font-size:.75rem;color:var(--text-3)">Set zone-level fares</div>
+  </a>
+  <a href="/bookings/?status=pending" class="qa-card">
+    <div style="font-size:1.5rem;margin-bottom:.5rem">📋</div>
+    <div style="font-family:var(--font-h);font-weight:700;font-size:.88rem;margin-bottom:.2rem">Pending Bookings</div>
+    <div style="font-size:.75rem;color:var(--text-3)">{{ pending_bookings }} waiting</div>
+  </a>
+  <a href="/payments/" class="qa-card">
+    <div style="font-size:1.5rem;margin-bottom:.5rem">💳</div>
+    <div style="font-family:var(--font-h);font-weight:700;font-size:.88rem;margin-bottom:.2rem">Payments</div>
+    <div style="font-size:.75rem;color:var(--text-3)">₹{{ "%.0f"|format(platform_cut) }} platform cut</div>
+  </a>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function pollStats() {
+  try {
+    const r = await fetch('/dashboard/api/stats');
+    const d = await r.json();
+    document.getElementById('lv-drivers').textContent = d.active_drivers;
+    document.getElementById('lv-rides').textContent   = d.active_rides;
+    document.getElementById('lv-pending').textContent = d.pending_bookings;
+    document.getElementById('lv-users').textContent   = d.total_users;
+  } catch(e) {}
+}
+setInterval(pollStats, 10000);
+</script>
+{% endblock %}

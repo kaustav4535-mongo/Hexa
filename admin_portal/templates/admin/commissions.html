@@ -1,0 +1,78 @@
+{% extends "admin/base.html" %}
+{% block title %}Commission Ledger — Admin{% endblock %}
+{% block page_title %}Commission Ledger{% endblock %}
+{% block content %}
+<div class="ph">
+  <div>
+    <div class="ph-title">Commission Ledger</div>
+    <div class="ph-sub">₹{{ platform_commission|int }} per ride · Total collected: <strong style="color:var(--brand)">₹{{ "%.2f"|format(total) }}</strong></div>
+  </div>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+    <a href="?method=online" class="btn {% if method_filter=='online' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">📱 Online</a>
+    <a href="?method=cash"   class="btn {% if method_filter=='cash'   %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">💵 Cash</a>
+    <a href="?status=pending" class="btn {% if status_filter=='pending' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">⏳ Pending</a>
+    <a href="?status=settled" class="btn {% if status_filter=='settled' %}btn-primary{% else %}btn-secondary{% endif %} btn-sm">✓ Settled</a>
+    <a href="/payments/commissions" class="btn btn-secondary btn-sm">All</a>
+  </div>
+</div>
+
+{% if not commissions %}
+<div style="text-align:center;padding:3rem;color:var(--text-3)">
+  <div style="font-size:3rem;margin-bottom:.5rem">📋</div>
+  <div>No commission records yet. They appear when rides complete.</div>
+</div>
+{% else %}
+<div class="card fade-up">
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>Date</th><th>Driver</th><th>Fare</th><th>Commission</th><th>Method</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for c in commissions %}
+        <tr>
+          <td style="font-size:.75rem;color:var(--text-3)">{{ c.created_at[:10] if c.created_at else '—' }}</td>
+          <td>
+            <div style="font-weight:600;font-size:.85rem">{{ c.driver_name }}</div>
+            <div style="font-size:.7rem;color:var(--text-3)">{{ c.booking_id[:8].upper() }}</div>
+          </td>
+          <td style="font-weight:600">₹{{ "%.0f"|format(c.fare) }}</td>
+          <td style="font-family:var(--font-h);font-weight:800;color:var(--brand)">₹{{ "%.0f"|format(c.commission) }}</td>
+          <td>
+            {% if c.method == 'cash' %}
+              <span class="badge b-warn">💵 Cash</span>
+            {% else %}
+              <span class="badge b-blue">📱 Online</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if c.status == 'deducted' %}<span class="badge b-green">✓ Deducted</span>
+            {% elif c.status == 'pending' %}<span class="badge b-warn">⏳ Pending</span>
+            {% elif c.status == 'settled' %}<span class="badge b-muted">✓ Settled</span>{% endif %}
+          </td>
+          <td>
+            {% if c.status == 'pending' and c.method == 'cash' %}
+            <button onclick="settle('{{ c._id }}')" class="btn btn-primary btn-sm">
+              ✓ Mark Settled
+            </button>
+            {% else %}
+            <span style="font-size:.75rem;color:var(--text-3)">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+<script>
+async function settle(id) {
+  if (!confirm('Mark this cash commission as settled?')) return;
+  var r = await fetch('/payments/commissions/'+id+'/settle', {method:'POST'});
+  var d = await r.json();
+  if (d.success) location.reload();
+  else alert(d.error || 'Error');
+}
+</script>
+{% endblock %}

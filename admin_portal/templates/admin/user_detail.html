@@ -1,0 +1,42 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ user.name }} — Admin{% endblock %}
+{% block page_title %}Customer Detail{% endblock %}
+{% block content %}
+<div class="ph"><div><div class="ph-title">{{ user.name }}</div><div class="ph-sub">{{ user.email }}</div></div><a href="/users/" class="btn btn-secondary btn-sm">← Back</a></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;margin-bottom:1.1rem">
+  <div class="card card-p">
+    <div class="card-title"><i class="fa fa-user" style="color:var(--info)"></i> Profile</div>
+    {% for label,val in [('Email',user.email),('Phone',user.phone or '—'),('Provider',user.auth_provider|upper),('Status',user.status|capitalize),('Joined',(user.created_at[:10] if user.created_at else '—')),('Loyalty',(user.loyalty_points or 0)|string+' pts')] %}
+    <div style="display:flex;justify-content:space-between;padding:.38rem 0;border-bottom:1px solid var(--border);font-size:.845rem"><span style="color:var(--text-3)">{{ label }}</span><span style="font-weight:600">{{ val }}</span></div>
+    {% endfor %}
+  </div>
+  <div class="card card-p">
+    <div class="card-title"><i class="fa fa-wallet" style="color:var(--brand)"></i> Wallet Adjustment</div>
+    <div style="font-family:var(--font-h);font-size:2rem;font-weight:800;color:var(--brand);margin-bottom:.5rem">₹{{ "%.2f"|format(user.wallet or 0) }}</div>
+    <form method="POST" action="/users/{{ user._id }}/adjust-wallet" style="margin-bottom:1rem">
+      <div class="form-group"><label class="form-label">Amount (+ add / - deduct)</label><input type="number" name="amount" class="form-control" placeholder="e.g. 100 or -50" step="0.01" required></div>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-plus"></i> Apply</button>
+    </form>
+    <div style="padding-top:1rem;border-top:1px solid var(--border)">
+      <form method="POST" action="/users/{{ user._id }}/delete" onsubmit="return confirm('Delete this user permanently?')">
+        <button type="submit" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i> Delete User</button>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="card fade-up">
+  <div class="card-p" style="border-bottom:1px solid var(--border)"><div class="card-title" style="margin-bottom:0">Booking History ({{ bookings|length }})</div></div>
+  <div class="tbl-wrap"><table class="tbl"><thead><tr><th>ID</th><th>Pickup</th><th>Fare</th><th>Payment</th><th>Status</th><th>Date</th></tr></thead><tbody>
+  {% if bookings %}{% for b in bookings %}
+  <tr>
+    <td><a href="/bookings/{{ b._id }}" class="td-id">#{{ b._id[:8].upper() }}</a></td>
+    <td style="font-size:.8rem;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ b.pickup_address }}</td>
+    <td style="color:var(--brand);font-weight:700">₹{{ "%.0f"|format(b.fare) }}</td>
+    <td>{% if b.payment_status=='paid' %}<span class="badge b-green">Paid</span>{% elif b.payment_locked %}<span class="badge b-warn">Locked</span>{% else %}<span class="badge b-red">Unpaid</span>{% endif %}</td>
+    <td>{% if b.status=='completed' %}<span class="badge b-green">Done</span>{% elif b.status=='cancelled' %}<span class="badge b-red">Cancelled</span>{% elif b.status=='in_progress' %}<span class="badge b-blue">Active</span>{% else %}<span class="badge b-muted">{{ b.status }}</span>{% endif %}</td>
+    <td style="font-size:.75rem;color:var(--text-3)">{{ b.created_at[:10] if b.created_at else '—' }}</td>
+  </tr>
+  {% endfor %}{% else %}<tr><td colspan="6" class="empty-cell">No bookings yet.</td></tr>{% endif %}
+  </tbody></table></div>
+</div>
+{% endblock %}

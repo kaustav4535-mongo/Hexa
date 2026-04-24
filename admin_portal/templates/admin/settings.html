@@ -1,0 +1,72 @@
+{% extends "admin/base.html" %}
+{% block title %}Settings — Admin
+<script>
+async function uploadAdminAvatar(inp) {
+  var file = inp.files[0]; if (!file) return;
+  var prog=document.getElementById('adm-ava-prog'), bar=document.getElementById('adm-ava-bar');
+  var stat=document.getElementById('adm-ava-status');
+  prog.style.display='block'; stat.textContent='Uploading...';
+  var pct=0,iv=setInterval(()=>{pct=Math.min(pct+8,85);bar.style.width=pct+'%';},150);
+  var fd=new FormData(); fd.append('avatar',file);
+  try {
+    var r=await fetch('/settings/upload-avatar',{method:'POST',body:fd});
+    var d=await r.json();
+    clearInterval(iv); bar.style.width='100%';
+    setTimeout(()=>{prog.style.display='none';bar.style.width='0';},600);
+    if (d.success) {
+      var el=document.getElementById('adm-ava');
+      el.innerHTML='<img src="'+d.url+'" style="width:100%;height:100%;object-fit:cover">';
+      stat.textContent='✓ Photo updated!'; stat.style.color='var(--brand)';
+    } else { stat.textContent='✗ '+d.error; stat.style.color='var(--danger)'; }
+  } catch(e){ clearInterval(iv); prog.style.display='none'; stat.textContent='✗ Network error'; stat.style.color='var(--danger)'; }
+}
+</script>
+
+{% endblock %}
+{% block page_title %}Settings{% endblock %}
+{% block content %}
+<div class="ph"><div><div class="ph-title">Settings</div><div class="ph-sub">Platform configuration & account management</div></div></div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;max-width:860px">
+  <div class="card card-p fade-up">
+    <div class="card-title"><i class="fa fa-user-shield" style="color:var(--brand)"></i> Admin Account</div>
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border)">
+      <div style="width:48px;height:48px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;font-family:var(--font-h);font-size:1.2rem;font-weight:800;color:#fff;flex-shrink:0">{{ admin.name[0].upper() }}</div>
+      <div><div style="font-family:var(--font-h);font-weight:800">{{ admin.name }}</div><div style="font-size:.82rem;color:var(--text-3)">{{ admin.email }}</div><span class="badge b-green" style="margin-top:.3rem">{{ admin.role|upper }}</span></div>
+    </div>
+    <div class="card-title" style="font-size:.82rem"><i class="fa fa-lock" style="color:var(--text-3)"></i> Change Password</div>
+    <form method="POST" action="/settings/change-password">
+      <div class="form-group"><label class="form-label">Current Password</label><input type="password" name="old_password" class="form-control" placeholder="••••••••" required></div>
+      <div class="form-group"><label class="form-label">New Password</label><input type="password" name="new_password" class="form-control" placeholder="Min 8 characters" minlength="8" required></div>
+      <button type="submit" class="btn btn-primary btn-sm">Update Password</button>
+    </form>
+  </div>
+  <div class="card card-p fade-up">
+    <div class="card-title"><i class="fa fa-user-plus" style="color:var(--info)"></i> Create Sub-Admin</div>
+    <form method="POST" action="/settings/create-admin">
+      <div class="form-group"><label class="form-label">Full Name</label><input type="text" name="name" class="form-control" placeholder="Admin Name" required></div>
+      <div class="form-group"><label class="form-label">Email</label><input type="email" name="email" class="form-control" placeholder="admin2@etuktuk.in" required></div>
+      <div class="form-group"><label class="form-label">Password</label><input type="password" name="password" class="form-control" placeholder="Min 8 characters" minlength="8" required></div>
+      <button type="submit" class="btn btn-secondary btn-sm"><i class="fa fa-plus"></i> Create Sub-Admin</button>
+    </form>
+  </div>
+  <div class="card card-p fade-up">
+    <div class="card-title"><i class="fa fa-database" style="color:var(--accent)"></i> Data Export</div>
+    <p style="font-size:.82rem;color:var(--text-3);margin-bottom:1rem">Export database for backup or MongoDB migration.</p>
+    <div style="display:flex;flex-direction:column;gap:.6rem">
+      <a href="/settings/export-db" class="btn btn-secondary btn-sm"><i class="fa fa-download"></i> Export DB as JSON</a>
+      <a href="/bookings/api/export" class="btn btn-secondary btn-sm"><i class="fa fa-file-csv"></i> Export Bookings as CSV</a>
+    </div>
+  </div>
+  <div class="card card-p fade-up">
+    <div class="card-title"><i class="fa fa-circle-info" style="color:var(--purple)"></i> Platform Info</div>
+    <div style="font-size:.84rem">
+      {% for label,val in [('Customer Portal','http://127.0.0.1:5001'),('Driver Portal','http://127.0.0.1:5002'),('Admin Portal','http://127.0.0.1:5003'),('Database','db.json (JSON / MongoDB-ready)'),('Payments','Razorpay (Test Mode)'),('Auth','Google OAuth + Email'),('Maps','MapTiler GL JS')] %}
+      <div style="display:flex;justify-content:space-between;padding:.38rem 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-3)">{{ label }}</span><span style="font-weight:500;font-size:.8rem">{{ val }}</span></div>
+      {% endfor %}
+    </div>
+    <div style="margin-top:.85rem;background:var(--brand-lt);border:1px solid var(--brand);border-radius:var(--radius-sm);padding:.75rem;font-size:.78rem;color:var(--brand)">
+      💡 To migrate to MongoDB: edit <code>shared/db.py</code> and set <code>USE_MONGO=true</code> in <code>.env</code>
+    </div>
+  </div>
+</div>
+{% endblock %}

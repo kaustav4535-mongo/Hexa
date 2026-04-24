@@ -1,0 +1,31 @@
+{% extends "admin/base.html" %}
+{% block title %}Payments — Admin{% endblock %}
+{% block page_title %}Payments{% endblock %}
+{% block content %}
+<div class="ph"><div><div class="ph-title">Payments</div><div class="ph-sub">All transactions & driver payouts</div></div></div>
+<div class="stats-grid fade-up" style="margin-bottom:1.25rem">
+  <div class="stat-card sc-green"><div class="s-icon g"><i class="fa fa-indian-rupee-sign"></i></div><div class="s-val">₹{{ "%.2f"|format(total_revenue) }}</div><div class="s-lbl">Total Collected</div></div>
+  <div class="stat-card sc-purple"><div class="s-icon p"><i class="fa fa-building-columns"></i></div><div class="s-val">₹{{ "%.2f"|format(platform_cut) }}</div><div class="s-lbl">Platform Revenue (20%)</div></div>
+  <div class="stat-card sc-orange"><div class="s-icon o"><i class="fa fa-money-bill-transfer"></i></div><div class="s-val">₹{{ "%.2f"|format(total_payouts) }}</div><div class="s-lbl">Driver Payouts</div></div>
+  <div class="stat-card sc-blue"><div class="s-icon b"><i class="fa fa-receipt"></i></div><div class="s-val">{{ payments|length }}</div><div class="s-lbl">Transactions</div></div>
+</div>
+<div class="card fade-up">
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>Payment ID</th><th>Order ID</th><th>Booking</th><th>Amount</th><th>Type</th><th>Date</th></tr></thead>
+      <tbody>
+        {% if payments %}{% for p in payments %}
+        <tr>
+          <td style="font-size:.77rem;font-family:monospace;color:var(--info)">{{ p.razorpay_payment_id[:22] }}{% if p.razorpay_payment_id|length>22 %}…{% endif %}</td>
+          <td style="font-size:.73rem;color:var(--text-3)">{{ p.razorpay_order_id[:16] if p.razorpay_order_id else '—' }}</td>
+          <td>{% if p.booking_id %}<a href="/bookings/{{ p.booking_id }}" class="td-id">#{{ p.booking_id[:8].upper() }}</a>{% else %}—{% endif %}</td>
+          <td style="color:var(--brand);font-weight:700">₹{{ "%.2f"|format(p.amount) }}</td>
+          <td>{% if p.status=='payout' %}<span class="badge b-orange">Payout</span>{% elif p.status=='captured' %}<span class="badge b-green">Captured</span>{% else %}<span class="badge b-muted">{{ p.status }}</span>{% endif %}</td>
+          <td style="font-size:.77rem;color:var(--text-3)">{{ p.created_at[:16] if p.created_at else '—' }}</td>
+        </tr>
+        {% endfor %}{% else %}<tr><td colspan="6" class="empty-cell">No payment records yet.</td></tr>{% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
