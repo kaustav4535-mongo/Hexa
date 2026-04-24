@@ -76,11 +76,16 @@ def toggle_status():
     if not driver:
         return jsonify({'success': False, 'error': 'Session expired'}), 401
 
-    # FIX: proper toggle logic
     current = driver.get('status', 'offline')
     new_status = 'offline' if current == 'online' else 'online'
 
-    # Driver can go online/offline freely — their own choice
+    # Only block going online if not approved; going offline is always allowed
+    if new_status == 'online' and driver.get('approval') != 'approved':
+        return jsonify({
+            'success': False,
+            'error': 'You are still pending admin approval. You cannot go online yet.'
+        }), 403
+
     db.update_one('drivers', {'_id': driver['_id']}, {'status': new_status})
     return jsonify({'success': True, 'status': new_status})
 
