@@ -6,12 +6,24 @@
   <div><div class="ph-title">{{ driver.name }}</div><div class="ph-sub">{{ driver.email }} · {{ driver.vehicle_number or 'No vehicle' }}</div></div>
   <div style="display:flex;gap:.5rem;flex-wrap:wrap">
     {% if driver.approval=='pending' %}
-    <form method="POST" action="/drivers/{{ driver._id }}/approve" style="display:inline"><button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-check"></i> Approve</button></form>
-    <form method="POST" action="/drivers/{{ driver._id }}/reject" style="display:inline"><button type="submit" class="btn btn-warning btn-sm"><i class="fa fa-xmark"></i> Reject</button></form>
+    <form method="POST" action="/drivers/{{ driver._id }}/approve" style="display:inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-check"></i> Approve</button>
+    </form>
+    <form method="POST" action="/drivers/{{ driver._id }}/reject" style="display:inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-warning btn-sm"><i class="fa fa-xmark"></i> Reject</button>
+    </form>
     {% elif driver.status=='suspended' %}
-    <form method="POST" action="/drivers/{{ driver._id }}/reinstate" style="display:inline"><button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-rotate-left"></i> Reinstate</button></form>
+    <form method="POST" action="/drivers/{{ driver._id }}/reinstate" style="display:inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-rotate-left"></i> Reinstate</button>
+    </form>
     {% elif driver.approval=='approved' %}
-    <form method="POST" action="/drivers/{{ driver._id }}/suspend" style="display:inline" onsubmit="return confirm('Suspend?')"><button type="submit" class="btn btn-danger btn-sm"><i class="fa fa-ban"></i> Suspend</button></form>
+    <form method="POST" action="/drivers/{{ driver._id }}/suspend" style="display:inline" onsubmit="return confirm('Suspend?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-danger btn-sm"><i class="fa fa-ban"></i> Suspend</button>
+    </form>
     {% endif %}
     <a href="/drivers/" class="btn btn-secondary btn-sm">← Back</a>
   </div>
@@ -54,6 +66,7 @@
       <div class="card-title"><i class="fa fa-wallet" style="color:var(--accent)"></i> Payout</div>
       <div style="font-size:.845rem;color:var(--text-3);margin-bottom:.75rem">Wallet: <strong style="color:var(--brand)">₹{{ "%.2f"|format(driver.wallet or 0) }}</strong></div>
       <form method="POST" action="/drivers/{{ driver._id }}/payout" onsubmit="return confirm('Process payout?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-primary btn-sm" {% if (driver.wallet or 0)<=0 %}disabled{% endif %}>
           <i class="fa fa-money-bill-transfer"></i> Process Payout
         </button>
@@ -69,6 +82,7 @@
       Home zone gets priority in booking matching.
     </p>
     <form method="POST" action="/drivers/{{ driver._id }}/assign-zone">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group">
         <label class="form-label">Home Zone (Primary)</label>
         <select name="home_zone_id" class="form-control">

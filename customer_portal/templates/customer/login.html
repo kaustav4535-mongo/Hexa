@@ -13,6 +13,7 @@
     </a>
     <div class="divider">or</div>
     <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group">
         <label class="form-label" data-i18n="label.email">Email Address</label>
         <div class="input-icon">

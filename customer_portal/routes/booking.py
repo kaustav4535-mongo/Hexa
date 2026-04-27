@@ -10,6 +10,12 @@ from shared.zone_engine import detect_zone, is_in_zone, calculate_fare
 booking_bp = Blueprint('booking', __name__)
 COMMISSION = Config.PLATFORM_COMMISSION  # ₹2 flat
 
+def _valid_india_coords(lat: float, lng: float) -> bool:
+    if not lat or not lng:
+        return False
+    return (Config.INDIA_LAT_MIN <= lat <= Config.INDIA_LAT_MAX and
+            Config.INDIA_LNG_MIN <= lng <= Config.INDIA_LNG_MAX)
+
 # ── New booking ───────────────────────────────────────────────────────────────
 @booking_bp.route('/new', methods=['GET', 'POST'])
 @login_required
@@ -35,6 +41,16 @@ def new_booking():
 
         if not pickup:
             flash('Pickup address is required.', 'danger')
+            return render_template('customer/booking_new.html',
+                                   zones=zones, drivers=drivers,
+                                   maptiler_key=Config.MAPTILER_KEY)
+        if not _valid_india_coords(pickup_lat, pickup_lng):
+            flash('Please select a valid pickup location in India.', 'danger')
+            return render_template('customer/booking_new.html',
+                                   zones=zones, drivers=drivers,
+                                   maptiler_key=Config.MAPTILER_KEY)
+        if (dropoff_lat or dropoff_lng) and not _valid_india_coords(dropoff_lat, dropoff_lng):
+            flash('Please select a valid drop-off location in India.', 'danger')
             return render_template('customer/booking_new.html',
                                    zones=zones, drivers=drivers,
                                    maptiler_key=Config.MAPTILER_KEY)
@@ -217,6 +233,51 @@ def cancel_booking(booking_id):
     db.update_one('bookings', {'_id': booking_id}, {'status': 'cancelled'})
     return jsonify({'success': True})
 
+# ── Post-ride rating ──────────────────────────────────────────────────────────
+@booking_bp.route('/<booking_id>/rate', methods=['POST'])
+@login_required
+def rate_driver(booking_id):
+    user    = current_user()
+    booking = db.find_one('bookings', {'_id': booking_id, 'customer_id': user['_id']})
+    if not booking:
+        flash('Booking not found.', 'danger')
+        return redirect(url_for('booking.my_bookings'))
+    if booking.get('status') != 'completed':
+        flash('You can rate only after the ride is completed.', 'warning')
+        return redirect(url_for('booking.booking_detail', booking_id=booking_id))
+    if booking.get('rating'):
+        flash('You already rated this ride.', 'info')
+        return redirect(url_for('booking.booking_detail', booking_id=booking_id))
+
+    try:
+        rating = int(request.form.get('rating', 0))
+    except (TypeError, ValueError):
+        rating = 0
+    if rating not in (1, 2, 3, 4, 5):
+        flash('Please choose a rating between 1 and 5.', 'danger')
+        return redirect(url_for('booking.booking_detail', booking_id=booking_id))
+
+    comment = (request.form.get('comment', '') or '').strip()[:240]
+    driver = db.find_one('drivers', {'_id': booking.get('driver_id', '')})
+    if not driver:
+        flash('Driver not found.', 'danger')
+        return redirect(url_for('booking.booking_detail', booking_id=booking_id))
+
+    count = int(driver.get('rating_count', 0) or 0)
+    avg   = float(driver.get('rating', 5.0) or 5.0)
+    new_avg = round(((avg * count) + rating) / (count + 1), 2)
+
+    db.update_one('drivers', {'_id': driver['_id']}, {
+        'rating': new_avg,
+        'rating_count': count + 1,
+    })
+    db.update_one('bookings', {'_id': booking_id}, {
+        'rating': rating,
+        'rating_comment': comment,
+    })
+    flash('Thanks for rating your driver!', 'success')
+    return redirect(url_for('booking.booking_detail', booking_id=booking_id))
+
 # ── Booking status API (polled by customer page) ──────────────────────────────
 @booking_bp.route('/api/status/<booking_id>')
 @login_required
@@ -361,17 +422,17 @@ def check_expiry(booking_id):
         created  = datetime.fromisoformat(booking.get('created_at', ''))
         elapsed  = (datetime.utcnow() - created).total_seconds()
         has_quot = bool(booking.get('driver_quotes'))
-        if elapsed > 600 and not has_quot:
+        if elapsed > Config.BOOKING_EXPIRY_SECONDS and not has_quot:
             db.update_one('bookings', {'_id': booking_id}, {
                 'status': 'expired',
                 'expired_reason': 'No driver quotes in 10 minutes'
             })
             return jsonify({'expired': True,
                             'message': 'No drivers available. Try again or change location.'})
-        if elapsed > 420 and not has_quot:
+        if elapsed > Config.BOOKING_EXPIRY_WARNING_SECONDS and not has_quot:
             return jsonify({'expired': False, 'warning': True,
-                            'remaining_sec': int(600 - elapsed),
-                            'message': f'No quotes yet. Expires in {int((600-elapsed)//60)}m.'})
+                            'remaining_sec': int(Config.BOOKING_EXPIRY_SECONDS - elapsed),
+                            'message': f'No quotes yet. Expires in {int((Config.BOOKING_EXPIRY_SECONDS-elapsed)//60)}m.'})
         return jsonify({'expired': False, 'elapsed': int(elapsed), 'has_quotes': has_quot})
     except Exception:
         return jsonify({'expired': False})

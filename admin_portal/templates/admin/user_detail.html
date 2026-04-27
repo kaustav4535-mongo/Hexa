@@ -14,11 +14,13 @@
     <div class="card-title"><i class="fa fa-wallet" style="color:var(--brand)"></i> Wallet Adjustment</div>
     <div style="font-family:var(--font-h);font-size:2rem;font-weight:800;color:var(--brand);margin-bottom:.5rem">₹{{ "%.2f"|format(user.wallet or 0) }}</div>
     <form method="POST" action="/users/{{ user._id }}/adjust-wallet" style="margin-bottom:1rem">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group"><label class="form-label">Amount (+ add / - deduct)</label><input type="number" name="amount" class="form-control" placeholder="e.g. 100 or -50" step="0.01" required></div>
       <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-plus"></i> Apply</button>
     </form>
     <div style="padding-top:1rem;border-top:1px solid var(--border)">
       <form method="POST" action="/users/{{ user._id }}/delete" onsubmit="return confirm('Delete this user permanently?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-danger btn-sm"><i class="fa fa-trash"></i> Delete User</button>
       </form>
     </div>

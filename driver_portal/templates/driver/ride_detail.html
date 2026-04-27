@@ -241,7 +241,7 @@ function getPosition(){
       // Update server
       fetch('/dashboard/update-location', {
         method: 'POST',
-        headers: {'Content-Type':'application/json'},
+        headers: {'Content-Type':'application/json','X-CSRFToken': getCsrfToken()},
         body: JSON.stringify({lat:lat, lng:lng})
       });
 
@@ -370,7 +370,7 @@ function haversine(lat1,lng1,lat2,lng2){
 window.confirmCashAndComplete = async function() {
   if (!confirm('Confirm you received ₹{{ "%.0f"|format(booking.fare) }} cash from the customer?')) return;
   // First confirm cash received
-  await fetch('/rides/{{ booking._id }}/cash-received', {method:'POST'});
+  await fetch('/rides/{{ booking._id }}/cash-received', {method:'POST', headers:{'X-CSRFToken': getCsrfToken()}});
   // Then complete the ride
   updateStatus('completed');
 };
@@ -378,7 +378,7 @@ window.confirmCashAndComplete = async function() {
 window.updateStatus = function(status){
   if(!confirm('Mark ride as '+status.replace('_',' ')+'?')) return;
   fetch('/rides/'+BID+'/status',{
-    method:'POST', headers:{'Content-Type':'application/json'},
+    method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken': getCsrfToken()},
     body:JSON.stringify({status:status})
   })
   .then(function(r){return r.json();})

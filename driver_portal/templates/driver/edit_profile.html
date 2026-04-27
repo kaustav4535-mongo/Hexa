@@ -5,6 +5,7 @@
 <div style="max-width:500px">
   <div class="card card-p">
     <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group"><label class="form-label">Full Name</label><input type="text" name="name" class="form-control" value="{{ driver.name }}" required></div>
       <div class="form-group"><label class="form-label">Phone</label><input type="tel" name="phone" class="form-control" value="{{ driver.phone or '' }}"></div>
       <div class="form-group"><label class="form-label">Vehicle Number</label><input type="text" name="vehicle_number" class="form-control" value="{{ driver.vehicle_number or '' }}"></div>
