@@ -31,6 +31,7 @@
     <div class="card card-p" style="margin-bottom:1.5rem">
       <div class="card-title"><i class="fa fa-mobile-screen" style="color:var(--brand)"></i> UPI Details</div>
       <form method="POST" action="/earnings/bank-details">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="payout_method" value="upi">
         <div class="form-group">
           <label class="form-label">Your UPI ID *</label>
@@ -56,6 +57,7 @@
     <div class="card card-p" style="margin-bottom:1.5rem">
       <div class="card-title"><i class="fa fa-building-columns" style="color:var(--brand)"></i> Bank Account Details</div>
       <form method="POST" action="/earnings/bank-details">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="hidden" name="payout_method" value="bank">
         <div class="form-group">
           <label class="form-label">Account Holder Name *</label>
@@ -175,7 +177,7 @@ async function requestWithdrawal() {
 
   var r = await fetch('/earnings/request-withdrawal', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: {'Content-Type': 'application/json','X-CSRFToken': getCsrfToken()},
     body: JSON.stringify({amount: amount})
   });
   var d = await r.json();

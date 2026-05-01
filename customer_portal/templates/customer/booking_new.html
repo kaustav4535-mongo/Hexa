@@ -163,6 +163,7 @@
     </div>
 
     <form method="POST" id="booking-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <!-- Hidden geo fields -->
       <input type="hidden" name="pickup_lat"   id="f-pickup-lat">
       <input type="hidden" name="pickup_lng"   id="f-pickup-lng">

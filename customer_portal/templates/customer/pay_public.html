@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <title>Pay for Ride — E-TukTukGo</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
@@ -106,6 +107,10 @@ body{font-family:'Segoe UI',sans-serif;background:#F4F6F8;min-height:100vh;displ
 var TOKEN  = '{{ token }}';
 var AMOUNT = {{ fare }};
 var RZP_KEY = '{{ rzp_key }}';
+function getCsrfToken() {
+  var el = document.querySelector('meta[name="csrf-token"]');
+  return el ? el.getAttribute('content') : '';
+}
 
 function updateAmt() {
   var v = parseFloat(document.getElementById('custom-amt').value);
@@ -122,7 +127,7 @@ async function startPay() {
 
   var r = await fetch('/booking/pay/'+TOKEN+'/create-order', {
     method:'POST',
-    headers:{'Content-Type':'application/json'},
+    headers:{'Content-Type':'application/json','X-CSRFToken': getCsrfToken()},
     body: JSON.stringify({amount: AMOUNT})
   });
   var d = await r.json();
@@ -144,7 +149,7 @@ async function startPay() {
     handler: async function(resp) {
       var vr = await fetch('/booking/pay/'+TOKEN+'/verify', {
         method:'POST',
-        headers:{'Content-Type':'application/json'},
+        headers:{'Content-Type':'application/json','X-CSRFToken': getCsrfToken()},
         body: JSON.stringify({
           razorpay_order_id:   resp.razorpay_order_id,
           razorpay_payment_id: resp.razorpay_payment_id,

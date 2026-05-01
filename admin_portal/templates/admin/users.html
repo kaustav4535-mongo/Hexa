@@ -48,6 +48,9 @@
 {% endblock %}
 {% block extra_js %}
 <script>
-async function toggleUser(id){ const r=await fetch(`/users/${id}/toggle-status`,{method:'POST'}); if((await r.json()).success) location.reload(); }
+async function toggleUser(id){
+  const r=await fetch(`/users/${id}/toggle-status`,{method:'POST',headers:{'X-CSRFToken': getCsrfToken()}});
+  if((await r.json()).success) location.reload();
+}
 </script>
 {% endblock %}

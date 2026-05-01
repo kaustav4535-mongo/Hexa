@@ -14,6 +14,7 @@
   <div style="display:flex;gap:.5rem;flex-wrap:wrap">
     {% if booking.status not in ('completed','cancelled') %}
     <form method="POST" action="/bookings/{{ booking._id }}/cancel" onsubmit="return confirm('Cancel this booking?')" style="display:inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-danger btn-sm"><i class="fa fa-xmark"></i> Cancel</button>
     </form>
     {% endif %}
@@ -69,6 +70,7 @@
       {% elif booking.status not in ('completed','cancelled') %}
       <div style="font-size:.82rem;color:var(--text-3);margin-bottom:.75rem">No driver assigned yet.</div>
       <form method="POST" action="/bookings/{{ booking._id }}/assign-driver">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
           <label class="form-label">Assign a Driver</label>
           <select name="driver_id" class="form-control" required>

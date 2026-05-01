@@ -5,6 +5,7 @@ from flask import (Blueprint, render_template, request,
                    redirect, url_for, flash, jsonify, session)
 from functools import wraps
 from shared import db
+from shared.config import Config
 from datetime import datetime
 
 driver_dash_bp = Blueprint('driver_dash', __name__)
@@ -60,13 +61,14 @@ def dashboard():
     today_done = [b for b in all_bookings
                   if b['status'] == 'completed'
                   and b.get('created_at', '')[:10] == today]
-    today_earn = sum(max(0.0, float(b.get('fare', 0)) - 2.0) for b in today_done)
+    today_earn = sum(max(0.0, float(b.get('fare', 0)) - COMMISSION) for b in today_done)
 
     return render_template('driver/dashboard.html',
                            driver=driver,
                            active_rides=active,
                            today_rides=len(today_done),
-                           today_earnings=today_earn)
+                           today_earnings=today_earn,
+                           commission=COMMISSION)
 
 # ── Toggle online/offline ─────────────────────────────────────────────────────
 @driver_dash_bp.route('/toggle-status', methods=['POST'])
@@ -262,10 +264,24 @@ def send_quote(booking_id):
     if price < 10:
         return jsonify({'success': False, 'error': 'Minimum quote is ₹10'}), 400
 
+    # Rate limit quote updates to prevent spam
+    quotes = booking.get('driver_quotes') or []
+    existing = next((q for q in quotes if q.get('driver_id') == driver['_id']), None)
+    if existing and existing.get('quoted_at'):
+        try:
+            last = datetime.fromisoformat(existing['quoted_at'])
+            if (datetime.utcnow() - last).total_seconds() < Config.QUOTE_COOLDOWN_SECONDS:
+                return jsonify({
+                    'success': False,
+                    'error': f'Please wait {Config.QUOTE_COOLDOWN_SECONDS}s before updating your quote.'
+                }), 429
+        except Exception:
+            pass
+
     # Replace existing quote from this driver (if any)
-    quotes = [q for q in (booking.get('driver_quotes') or [])
-              if q.get('driver_id') != driver['_id']]
-    quotes.append({
+    had_quote = existing is not None
+    quotes = [q for q in quotes if q.get('driver_id') != driver['_id']]
+    quote = {
         'driver_id': driver['_id'],
         'name':      driver.get('name', ''),
         'price':     round(price, 2),
@@ -273,8 +289,19 @@ def send_quote(booking_id):
         'avatar':    driver.get('avatar', ''),
         'rating':    driver.get('rating', 5.0),
         'vehicle':   driver.get('vehicle_number', ''),
-    })
+        'quoted_at': datetime.utcnow().isoformat(),
+    }
+    quotes.append(quote)
     db.update_one('bookings', {'_id': booking_id}, {'driver_quotes': quotes})
+
+    if not had_quote:
+        try:
+            from shared.notifications import send_quote_notification
+            customer = db.find_one('users', {'_id': booking.get('customer_id', '')})
+            if customer:
+                send_quote_notification(customer, booking, quote)
+        except Exception:
+            pass
 
     return jsonify({
         'success': True,

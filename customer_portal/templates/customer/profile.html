@@ -124,6 +124,7 @@
   <div class="card card-p fade-up" style="margin-bottom:1.25rem">
     <div class="card-title"><i class="fa fa-pen" style="color:var(--text-3)"></i> Edit Profile</div>
     <form method="POST" action="/profile/edit">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group">
         <label class="form-label">Full Name *</label>
         <input type="text" name="name" class="form-control" value="{{ user.name }}" required>
@@ -141,6 +142,7 @@
   <div class="card card-p fade-up" style="margin-bottom:1.25rem">
     <div class="card-title"><i class="fa fa-lock" style="color:var(--text-3)"></i> Change Password</div>
     <form method="POST" action="/profile/change-password">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group">
         <label class="form-label">Current Password</label>
         <div class="pw-wrap"><input type="password" name="old_password" id="pw-old" class="form-control" placeholder="••••••••" required>
@@ -199,7 +201,7 @@ async function uploadAvatar(input) {
   var fd = new FormData();
   fd.append('avatar', file);
   try {
-    var r = await fetch('/profile/upload-avatar', {method:'POST', body:fd});
+    var r = await fetch('/profile/upload-avatar', {method:'POST', headers:{'X-CSRFToken': getCsrfToken()}, body:fd});
     var d = await r.json();
     clearInterval(iv);
     bar.style.width = '100%';
@@ -237,7 +239,7 @@ async function uploadIdDoc(input) {
   fd.append('id_doc', file);
   fd.append('id_type', _docType);
   try {
-    var r = await fetch('/profile/upload-id-doc', {method:'POST', body:fd});
+    var r = await fetch('/profile/upload-id-doc', {method:'POST', headers:{'X-CSRFToken': getCsrfToken()}, body:fd});
     var d = await r.json();
     clearInterval(iv);
     bar.style.width = '100%';

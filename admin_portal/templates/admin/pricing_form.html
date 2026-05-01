@@ -5,6 +5,7 @@
 <div class="ph"><div><div class="ph-title">{{ action }} Zone</div><div class="ph-sub">Changes go live instantly on all portals.</div></div><a href="/pricing/" class="btn btn-secondary btn-sm">← Back</a></div>
 <div style="max-width:680px">
   <form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="card card-p fade-up" style="margin-bottom:1.1rem">
       <div class="card-title"><i class="fa fa-map-location-dot" style="color:var(--info)"></i> Zone Identity</div>
       <div class="form-group"><label class="form-label">Zone Name *</label><input type="text" name="name" class="form-control" placeholder="e.g. Jorhat Central" value="{{ zone.name if zone else '' }}" required></div>

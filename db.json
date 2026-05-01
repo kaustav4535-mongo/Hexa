@@ -1,0 +1,29 @@
+{
+  "users": [],
+  "drivers": [
+    {
+      "_id": "fec39b91-579b-4ab0-84f6-ac51093e738d",
+      "created_at": "2026-05-01T16:33:31.284624",
+      "updated_at": "2026-05-01T16:33:31.284631",
+      "name": "Test Driver",
+      "email": "testdriver@test.com",
+      "password_hash": "xxx",
+      "phone": "9999999999",
+      "vehicle_number": "MH01AB1234",
+      "license_no": "DL1234",
+      "status": "online",
+      "approval": "approved",
+      "rating": 5.0,
+      "wallet": 0.0,
+      "total_rides": 0,
+      "total_earnings": 0.0
+    }
+  ],
+  "admins": [],
+  "bookings": [],
+  "zones": [],
+  "payments": [],
+  "sessions": [],
+  "withdrawals": [],
+  "commissions": []
+}
