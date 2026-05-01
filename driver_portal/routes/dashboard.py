@@ -10,6 +10,8 @@ from datetime import datetime
 
 driver_dash_bp = Blueprint('driver_dash', __name__)
 
+COMMISSION = Config.PLATFORM_COMMISSION  # ₹2 flat per ride
+
 # ── Auth guard ────────────────────────────────────────────────────────────────
 def driver_required(f):
     @wraps(f)
@@ -63,12 +65,16 @@ def dashboard():
                   and b.get('created_at', '')[:10] == today]
     today_earn = sum(max(0.0, float(b.get('fare', 0)) - COMMISSION) for b in today_done)
 
+    required = ['phone', 'vehicle_number', 'license_no']
+    profile_complete = all(str(driver.get(f, '') or '').strip() for f in required)
+
     return render_template('driver/dashboard.html',
                            driver=driver,
                            active_rides=active,
                            today_rides=len(today_done),
                            today_earnings=today_earn,
-                           commission=COMMISSION)
+                           commission=COMMISSION,
+                           profile_complete=profile_complete)
 
 # ── Toggle online/offline ─────────────────────────────────────────────────────
 @driver_dash_bp.route('/toggle-status', methods=['POST'])

@@ -1,10 +1,20 @@
 {
-  "users": [],
+  "users": [
+    {
+      "_id": "87e75238-e362-4dfc-9d3e-67485fe9dd5b",
+      "created_at": "2026-05-01T16:34:19.776752",
+      "updated_at": "2026-05-01T16:34:19.776756",
+      "name": "Test Customer",
+      "email": "customer@test.com",
+      "password_hash": "xxx",
+      "phone": "8888888888"
+    }
+  ],
   "drivers": [
     {
-      "_id": "fec39b91-579b-4ab0-84f6-ac51093e738d",
-      "created_at": "2026-05-01T16:33:31.284624",
-      "updated_at": "2026-05-01T16:33:31.284631",
+      "_id": "9e8ab40d-b5d0-4aa5-97d6-5033f3741637",
+      "created_at": "2026-05-01T16:34:19.776502",
+      "updated_at": "2026-05-01T16:35:33.948554",
       "name": "Test Driver",
       "email": "testdriver@test.com",
       "password_hash": "xxx",
@@ -14,16 +24,64 @@
       "status": "online",
       "approval": "approved",
       "rating": 5.0,
-      "wallet": 0.0,
-      "total_rides": 0,
-      "total_earnings": 0.0
+      "wallet": 78.0,
+      "total_rides": 1,
+      "total_earnings": 78.0
     }
   ],
   "admins": [],
-  "bookings": [],
+  "bookings": [
+    {
+      "_id": "07712dde-f98d-4853-851d-9cf1df883869",
+      "created_at": "2026-05-01T16:34:19.777088",
+      "updated_at": "2026-05-01T16:35:33.949648",
+      "customer_id": "87e75238-e362-4dfc-9d3e-67485fe9dd5b",
+      "customer_name": "Test Customer",
+      "customer_email": "customer@test.com",
+      "pickup_address": "Connaught Place, Delhi",
+      "dropoff_address": "India Gate, Delhi",
+      "pickup_lat": 28.6315,
+      "pickup_lng": 77.2167,
+      "dropoff_lat": 28.6129,
+      "dropoff_lng": 77.2295,
+      "distance_km": 3.2,
+      "zone_id": "",
+      "booking_type": "now",
+      "hours": 1,
+      "fare": 80.0,
+      "reference_fare": 50.0,
+      "commission": 2.0,
+      "driver_earn": 78.0,
+      "driver_id": "9e8ab40d-b5d0-4aa5-97d6-5033f3741637",
+      "driver_name": "Test Driver",
+      "driver_phone": "9999999999",
+      "status": "completed",
+      "payment_status": "paid_cash",
+      "payment_method": "cash",
+      "payment_locked": false,
+      "driver_quotes": [],
+      "interested_drivers": [],
+      "notes": "Test booking",
+      "cash_confirmed": true
+    }
+  ],
   "zones": [],
   "payments": [],
   "sessions": [],
   "withdrawals": [],
-  "commissions": []
+  "commissions": [
+    {
+      "_id": "7d85a002-7c9c-40ee-bb59-807d08b95a45",
+      "created_at": "2026-05-01T16:35:33.948199",
+      "updated_at": "2026-05-01T16:35:33.948203",
+      "booking_id": "07712dde-f98d-4853-851d-9cf1df883869",
+      "driver_id": "9e8ab40d-b5d0-4aa5-97d6-5033f3741637",
+      "driver_name": "Test Driver",
+      "fare": 80.0,
+      "commission": 2.0,
+      "method": "cash",
+      "status": "pending",
+      "note": "Cash ride — deduct from weekly payout"
+    }
+  ]
 }
