@@ -248,6 +248,9 @@
 // ── State (read from server-rendered template) ────────────────────────────────
 var _online  = {{ 'true' if driver.status == 'online' else 'false' }};
 var _pollInt = null;
+var COMM = {{ commission }};
+var _knownRequestIds = new Set();
+var _audioCtx = null;
 var _isToggling = false;
 
 // ── Sync sidebar UI on page load ──────────────────────────────────────────────
@@ -263,7 +266,7 @@ window.doBigToggle = function() {
   btn.disabled = true;
   knob.textContent = '⏳';
 
-  fetch('/dashboard/toggle-status', { method: 'POST' })
+  fetch('/dashboard/toggle-status', { method: 'POST', headers:{'X-CSRFToken': getCsrfToken()} })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       _isToggling = false;
@@ -306,7 +309,7 @@ window.doBigToggle = function() {
 function startPolling() {
   loadRequests();                            // immediate first call
   stopPolling();                             // clear any existing interval
-  _pollInt = setInterval(loadRequests, 6000); // then every 6s
+  _pollInt = setInterval(loadRequests, 3000); // then every 3s
 }
 
 function stopPolling() {
@@ -359,6 +362,7 @@ window.loadRequests = function() {
           '<div style="font-size:2rem;margin-bottom:.4rem">📡</div>' +
           '<div style="font-size:.86rem">No ride requests right now. Stay online — customers are searching!</div>' +
           '</div>';
+        _knownRequestIds = new Set();
         return;
       }
 
@@ -367,6 +371,12 @@ window.loadRequests = function() {
         badge.style.display = '';
         badge.textContent = data.count + ' new';
       }
+
+      var incomingIds = new Set((data.requests || []).map(r => r._id));
+      var hasNew = false;
+      incomingIds.forEach(function(id){ if (!_knownRequestIds.has(id)) hasNew = true; });
+      if (hasNew && _online) { playAlert(); }
+      _knownRequestIds = incomingIds;
 
       area.innerHTML = data.requests.map(function(r) {
         // pending = quote confirmed, awaiting payment
@@ -382,11 +392,11 @@ window.loadRequests = function() {
                     '<i class="fa fa-check-circle"></i> Confirmed! View Ride →</a>';
         } else if (r.already_sent) {
           // Driver already sent a quote — show edit/withdraw
-          var earn = Math.max(0, parseFloat(r.my_price) - 2);
-          actions = '<div style="width:100%">' +
-                    '<div style="font-size:.8rem;color:var(--brand);font-weight:700;margin-bottom:.4rem">' +
-                    '✓ Your quote: ₹' + parseFloat(r.my_price).toFixed(0) +
-                    ' &nbsp;·&nbsp; You get ₹' + earn.toFixed(0) + ' (₹2 fee)</div>' +
+          var earn = Math.max(0, parseFloat(r.my_price) - COMM);
+           actions = '<div style="width:100%">' +
+                     '<div style="font-size:.8rem;color:var(--brand);font-weight:700;margin-bottom:.4rem">' +
+                     '✓ Your quote: ₹' + parseFloat(r.my_price).toFixed(0) +
+                     ' &nbsp;·&nbsp; You get ₹' + earn.toFixed(0) + ' (₹' + COMM + ' fee)</div>' +
                     '<div style="display:flex;gap:.4rem;flex-wrap:wrap">' +
                     '<button class="btn btn-secondary btn-sm" onclick="openQuoteModal('' + r._id + '',' + r.my_price + ')">' +
                     '<i class="fa fa-pen"></i> Edit Price</button>' +
@@ -426,16 +436,16 @@ window.openQuoteModal = function(bookingId, currentPrice) {
   var price = prompt(
     '💬 Enter your price for this ride:\n' +
     (currentPrice > 0 ? 'Current quote: ₹' + currentPrice : 'Set your price') +
-    '\n\nYou receive: (your price − ₹2 platform fee)',
+    '\n\nYou receive: (your price − ₹' + COMM + ' platform fee)',
     currentPrice > 0 ? currentPrice : ''
   );
   if (price === null) return;
   price = parseFloat(price);
   if (!price || price < 10) { alert('Minimum price is ₹10'); return; }
-  var earn = Math.max(0, price - 2);
+   var earn = Math.max(0, price - COMM);
   if (!confirm('Send quote of ₹' + price.toFixed(0) + '?\nYou will receive: ₹' + earn.toFixed(0))) return;
   fetch('/dashboard/send-quote/' + bookingId, {
-    method: 'POST', headers: {'Content-Type':'application/json'},
+    method: 'POST', headers: {'Content-Type':'application/json','X-CSRFToken': getCsrfToken()},
     body: JSON.stringify({price: price})
   })
   .then(function(r){ return r.json(); })
@@ -454,13 +464,13 @@ window.openQuoteModal = function(bookingId, currentPrice) {
 // ── Withdraw Quote ────────────────────────────────────────────────────────────
 window.withdrawQuote = function(id) {
   if (!confirm('Withdraw your price quote for this ride?')) return;
-  fetch('/dashboard/withdraw-quote/' + id, {method:'POST'})
+  fetch('/dashboard/withdraw-quote/' + id, {method:'POST', headers:{'X-CSRFToken': getCsrfToken()}})
     .then(function(r){ return r.json(); })
     .then(function(data){ if(data.success) loadRequests(); });
 };
 // ── Skip ride ─────────────────────────────────────────────────────────────────
 window.skipRide = function(id) {
-  fetch('/dashboard/reject/' + id, { method: 'POST' });
+  fetch('/dashboard/reject/' + id, { method: 'POST', headers:{'X-CSRFToken': getCsrfToken()} });
   var card = document.getElementById('req-' + id);
   if (card) {
     card.style.transition = 'opacity .3s, transform .3s';
@@ -475,7 +485,7 @@ window.completeRide = function(id) {
   if (!confirm('Mark this ride as completed?')) return;
   fetch('/rides/' + id + '/status', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json','X-CSRFToken': getCsrfToken() },
     body: JSON.stringify({ status: 'completed' })
   })
   .then(function(r) { return r.json(); })
@@ -488,6 +498,23 @@ window.completeRide = function(id) {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function playAlert() {
+  try {
+    if (!_audioCtx) {
+      _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    var osc = _audioCtx.createOscillator();
+    var gain = _audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+    gain.gain.value = 0.07;
+    osc.connect(gain);
+    gain.connect(_audioCtx.destination);
+    osc.start();
+    osc.stop(_audioCtx.currentTime + 0.2);
+  } catch(e) {}
 }
 
 

@@ -9,7 +9,7 @@ async function uploadAdminAvatar(inp) {
   var pct=0,iv=setInterval(()=>{pct=Math.min(pct+8,85);bar.style.width=pct+'%';},150);
   var fd=new FormData(); fd.append('avatar',file);
   try {
-    var r=await fetch('/settings/upload-avatar',{method:'POST',body:fd});
+    var r=await fetch('/settings/upload-avatar',{method:'POST',headers:{'X-CSRFToken': getCsrfToken()},body:fd});
     var d=await r.json();
     clearInterval(iv); bar.style.width='100%';
     setTimeout(()=>{prog.style.display='none';bar.style.width='0';},600);
@@ -35,6 +35,7 @@ async function uploadAdminAvatar(inp) {
     </div>
     <div class="card-title" style="font-size:.82rem"><i class="fa fa-lock" style="color:var(--text-3)"></i> Change Password</div>
     <form method="POST" action="/settings/change-password">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group"><label class="form-label">Current Password</label><input type="password" name="old_password" class="form-control" placeholder="••••••••" required></div>
       <div class="form-group"><label class="form-label">New Password</label><input type="password" name="new_password" class="form-control" placeholder="Min 8 characters" minlength="8" required></div>
       <button type="submit" class="btn btn-primary btn-sm">Update Password</button>
@@ -43,6 +44,7 @@ async function uploadAdminAvatar(inp) {
   <div class="card card-p fade-up">
     <div class="card-title"><i class="fa fa-user-plus" style="color:var(--info)"></i> Create Sub-Admin</div>
     <form method="POST" action="/settings/create-admin">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group"><label class="form-label">Full Name</label><input type="text" name="name" class="form-control" placeholder="Admin Name" required></div>
       <div class="form-group"><label class="form-label">Email</label><input type="email" name="email" class="form-control" placeholder="admin2@etuktuk.in" required></div>
       <div class="form-group"><label class="form-label">Password</label><input type="password" name="password" class="form-control" placeholder="Min 8 characters" minlength="8" required></div>

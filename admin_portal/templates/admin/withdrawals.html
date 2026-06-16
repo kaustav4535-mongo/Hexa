@@ -139,6 +139,7 @@
       <form method="POST" action="/drivers/withdrawals/{{ w._id }}/process"
             onsubmit="return confirm('Mark ₹' + this.dataset.amt + ' to ' + this.dataset.name + ' as PAID?')"
             data-amt="{{ w.amount|int }}" data-name="{{ w.driver_name }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit" class="btn btn-primary btn-sm">
           <i class="fa fa-check-circle"></i> Mark as Paid
         </button>
@@ -182,6 +183,7 @@
   <div style="background:var(--surface);border-radius:var(--radius-lg);padding:1.75rem;max-width:400px;width:90%;margin:1rem">
     <div style="font-family:var(--font-h);font-weight:700;margin-bottom:.9rem">Reject Withdrawal</div>
     <form method="POST" id="reject-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-group">
         <label class="form-label">Reason (shown to driver)</label>
         <input type="text" name="note" class="form-control" placeholder="e.g. Invalid UPI ID, please update" required>

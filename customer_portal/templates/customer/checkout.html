@@ -150,7 +150,7 @@ async function startOnlinePayment() {
 
   var r = await fetch('/payment/create-order', {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: {'Content-Type': 'application/json','X-CSRFToken': getCsrfToken()},
     body: JSON.stringify({booking_id: BID, amount: currentAmount})
   });
   var d = await r.json();
@@ -173,7 +173,7 @@ async function startOnlinePayment() {
     handler: async function(resp) {
       var vr = await fetch('/payment/verify', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json','X-CSRFToken': getCsrfToken()},
         body: JSON.stringify({
           razorpay_order_id:   resp.razorpay_order_id,
           razorpay_payment_id: resp.razorpay_payment_id,
@@ -200,7 +200,7 @@ async function startOnlinePayment() {
 async function confirmCash() {
   if (!confirm('Confirm cash payment of ₹'+Math.round(currentAmount)+' to be paid directly to driver?')) return;
   var r = await fetch('/payment/cash/'+BID, {method:'POST',
-    headers:{'Content-Type':'application/json'},
+    headers:{'Content-Type':'application/json','X-CSRFToken': getCsrfToken()},
     body: JSON.stringify({amount: currentAmount})
   });
   var d = await r.json();

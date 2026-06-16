@@ -5,7 +5,9 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from flask import Flask
+from flask_wtf.csrf import CSRFProtect
 from shared.config import Config
+from shared.scheduler import start_scheduler
 from driver_portal.routes.auth     import driver_auth_bp
 from driver_portal.routes.dashboard import driver_dash_bp
 from driver_portal.routes.rides    import driver_rides_bp
@@ -19,6 +21,8 @@ def create_app():
                 static_folder='static')
     app.config.from_object(Config)
     app.config['SESSION_COOKIE_NAME'] = 'etuktuk_driver'
+    CSRFProtect(app)
+    start_scheduler()
 
     app.register_blueprint(driver_auth_bp)
     app.register_blueprint(driver_dash_bp,      url_prefix='/dashboard')

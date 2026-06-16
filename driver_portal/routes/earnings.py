@@ -4,9 +4,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 from flask import Blueprint, render_template, jsonify, request, session, redirect, url_for, flash
 from functools import wraps
 from shared import db
+from shared.config import Config
 from datetime import datetime
 
 driver_earnings_bp = Blueprint('driver_earnings', __name__)
+COMMISSION = Config.PLATFORM_COMMISSION
 
 def driver_required(f):
     @wraps(f)
@@ -37,9 +39,9 @@ def earnings():
     for b in bookings:
         day = b.get('created_at', '')[:10]
         if day:
-            weekly[day] = weekly.get(day, 0) + max(0.0, float(b.get('fare', 0)) - 2.0)
+            weekly[day] = weekly.get(day, 0) + max(0.0, float(b.get('fare', 0)) - COMMISSION)
     weekly_sorted = sorted(weekly.items())[-7:]
-    total_earn = sum(max(0.0, float(b.get('fare', 0)) - 2.0) for b in bookings)
+    total_earn = sum(max(0.0, float(b.get('fare', 0)) - COMMISSION) for b in bookings)
 
     withdrawals = db.find('withdrawals', {'driver_id': driver['_id']})
     withdrawals.sort(key=lambda w: w.get('created_at', ''), reverse=True)
@@ -155,7 +157,7 @@ def summary_api():
     bookings = db.find('bookings', {'driver_id': driver['_id'], 'status': 'completed'})
     today    = datetime.utcnow().strftime('%Y-%m-%d')
     today_r  = [b for b in bookings if b.get('created_at', '')[:10] == today]
-    today_e  = sum(max(0.0, float(b.get('fare', 0)) - 2.0) for b in today_r)
+    today_e  = sum(max(0.0, float(b.get('fare', 0)) - COMMISSION) for b in today_r)
     return jsonify({
         'today_rides':    len(today_r),
         'today_earnings': round(today_e, 2),

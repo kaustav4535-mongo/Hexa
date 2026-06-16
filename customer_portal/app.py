@@ -5,7 +5,9 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from flask import Flask
+from flask_wtf.csrf import CSRFProtect
 from shared.config import Config
+from shared.scheduler import start_scheduler
 from customer_portal.routes.auth   import auth_bp
 from customer_portal.routes.home   import home_bp
 from customer_portal.routes.booking import booking_bp
@@ -18,6 +20,8 @@ def create_app():
                 static_folder='static')
     app.config.from_object(Config)
     app.config['SESSION_COOKIE_NAME'] = 'etuktuk_customer'
+    CSRFProtect(app)
+    start_scheduler()
 
     app.register_blueprint(home_bp)
     app.register_blueprint(auth_bp,    url_prefix='/auth')

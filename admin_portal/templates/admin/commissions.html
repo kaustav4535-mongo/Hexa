@@ -69,7 +69,7 @@
 <script>
 async function settle(id) {
   if (!confirm('Mark this cash commission as settled?')) return;
-  var r = await fetch('/payments/commissions/'+id+'/settle', {method:'POST'});
+  var r = await fetch('/payments/commissions/'+id+'/settle', {method:'POST', headers:{'X-CSRFToken': getCsrfToken()}});
   var d = await r.json();
   if (d.success) location.reload();
   else alert(d.error || 'Error');

@@ -58,6 +58,7 @@
               <a href="/drivers/{{ d._id }}" class="btn btn-secondary btn-sm btn-icon" title="View"><i class="fa fa-eye"></i></a>
               {% if d.approval=='pending' %}
               <form method="POST" action="/drivers/{{ d._id }}/approve" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-primary btn-sm" title="Approve"><i class="fa fa-check"></i></button>
               </form>
               {% endif %}
@@ -84,7 +85,11 @@ function updateBulk(){
 async function bulkApprove(){
   const ids=[...document.querySelectorAll('.row-chk:checked')].map(c=>c.value);
   if(!confirm(`Approve ${ids.length} drivers?`))return;
-  const r=await fetch('/drivers/api/bulk-approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids})});
+  const r=await fetch('/drivers/api/bulk-approve',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken': getCsrfToken()},
+    body:JSON.stringify({ids})
+  });
   const d=await r.json();
   if(d.success) location.reload();
 }

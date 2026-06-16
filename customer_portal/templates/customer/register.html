@@ -13,6 +13,7 @@
     </a>
     <div class="divider">or register with email</div>
     <form method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <div class="form-row">
         <div class="form-group">
           <label class="form-label" data-i18n="label.name">Full Name</label>

@@ -102,8 +102,30 @@ Features used:
 
 ## 💾 MongoDB Migration
 
-Only one file to change: `shared/db.py`  
-All route files stay identical — zero refactoring needed.
+Set these env vars and restart:
+```
+USE_MONGO=true
+MONGO_URI=mongodb+srv://<user>:<pass>@cluster.mongodb.net
+MONGO_DB_NAME=etuktukgo
+```
+All routes keep the same interface — zero refactoring needed.
+
+## 🔐 Security & Ops Notes
+- Set a strong `SECRET_KEY` in `.env` for production.
+- CSRF protection is enabled (Flask-WTF). For fetch calls, send `X-CSRFToken`.
+- Background scheduler auto-expires open bookings after 10 minutes.
+
+## 📲 Driver Quote Notifications
+Optional SMS/WhatsApp alerts when a driver sends a quote:
+```
+TWILIO_ACCOUNT_SID=...
+TWILIO_AUTH_TOKEN=...
+TWILIO_FROM_NUMBER=...
+
+# Or MSG91
+MSG91_AUTH_KEY=...
+MSG91_SENDER_ID=...
+```
 
 ---
 

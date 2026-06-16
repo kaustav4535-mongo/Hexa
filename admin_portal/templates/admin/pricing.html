@@ -78,6 +78,7 @@
         {% if z.get('active',True) %}<i class="fa fa-eye-slash"></i> Disable{% else %}<i class="fa fa-eye"></i> Enable{% endif %}
       </button>
       <form method="POST" action="/pricing/{{ z._id }}/delete" onsubmit="return confirm('Delete?')" style="margin-left:auto">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-danger btn-sm btn-icon"><i class="fa fa-trash"></i></button>
       </form>
     </div>
@@ -106,6 +107,9 @@ async function calcP(){
   document.getElementById('r-mx').textContent=d.multiplier+'×';
   document.getElementById('r-tot').textContent='₹'+d.total;
 }
-async function toggleZone(id){ const r=await fetch(`/pricing/${id}/toggle`,{method:'POST'}); if((await r.json()).success) location.reload(); }
+async function toggleZone(id){
+  const r=await fetch(`/pricing/${id}/toggle`,{method:'POST',headers:{'X-CSRFToken': getCsrfToken()}});
+  if((await r.json()).success) location.reload();
+}
 </script>
 {% endblock %}

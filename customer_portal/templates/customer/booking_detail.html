@@ -96,7 +96,7 @@
           {% else %}📍 Booking Location{% endif %}
         </div>
         <div style="font-size:.73rem;color:var(--text-3);margin-top:.1rem" id="map-status-txt">
-          {% if booking.status in ('confirmed','in_progress') %}Driver location updates every 5s{% else %}Showing ride route{% endif %}
+          {% if booking.status in ('confirmed','in_progress') %}Driver location updates every 3s{% else %}Showing ride route{% endif %}
         </div>
       </div>
       <div style="display:flex;gap:.4rem;flex-wrap:wrap;align-items:center" id="dist-badges">
@@ -236,7 +236,7 @@
       <div style="font-weight:700;color:#92400E;margin-bottom:.25rem">Cash Payment</div>
       <div style="font-size:.84rem;color:#78350F">
         Pay <strong>₹{{ "%.0f"|format(booking.fare) }}</strong> directly to your driver after the ride.
-        Driver gets ₹{{ "%.0f"|format([booking.fare - 2, 0]|max) }} (₹2 platform fee collected separately).
+        Driver gets ₹{{ "%.0f"|format([booking.fare - commission, 0]|max) }} (₹{{ commission|int }} platform fee collected separately).
       </div>
     </div>
 
@@ -261,8 +261,8 @@
       </div>
       <div style="font-size:.84rem;color:var(--text-2);margin-bottom:.5rem">
         Agreed fare: <strong>₹{{ "%.0f"|format(booking.fare) }}</strong> ·
-        Driver gets ₹{{ "%.0f"|format([booking.fare - 2, 0]|max) }}
-        <span style="font-size:.75rem;color:var(--text-3)">(₹2 platform fee)</span>
+        Driver gets ₹{{ "%.0f"|format([booking.fare - commission, 0]|max) }}
+        <span style="font-size:.75rem;color:var(--text-3)">(₹{{ commission|int }} platform fee)</span>
       </div>
 
       {# ── Free payment amount input ── #}
@@ -278,7 +278,7 @@
                  oninput="updatePayAmount()">
         </div>
         <div id="earn-note" style="font-size:.75rem;color:var(--brand);margin-top:.35rem;font-weight:600">
-          Driver gets ₹{{ "%.0f"|format([booking.fare - 2, 0]|max) }} · ₹2 platform fee
+          Driver gets ₹{{ "%.0f"|format([booking.fare - commission, 0]|max) }} · ₹{{ commission|int }} platform fee
         </div>
         <div style="font-size:.7rem;color:var(--text-3);margin-top:.2rem">
           Agreed fare was ₹{{ "%.0f"|format(booking.fare) }} — you can change this
@@ -368,6 +368,36 @@
   </div>
   {% endif %}
 
+  {% if booking.status == 'completed' %}
+  <div class="card card-p" style="margin-bottom:1.25rem">
+    <div class="card-title"><i class="fa fa-star" style="color:#F59E0B"></i> Rate Your Driver</div>
+    {% if not booking.rating %}
+    <form method="POST" action="/booking/{{ booking._id }}/rate">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group">
+        <label class="form-label">Rating</label>
+        <select name="rating" class="form-control" required>
+          <option value="">Select</option>
+          {% for r in [5,4,3,2,1] %}
+          <option value="{{ r }}">{{ r }} Star{{ 's' if r>1 else '' }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Comment (optional)</label>
+        <textarea name="comment" class="form-control" rows="2" maxlength="240" placeholder="Share feedback about your ride"></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-check"></i> Submit Rating</button>
+    </form>
+    {% else %}
+    <div style="font-size:.85rem;color:var(--text-2)">
+      You rated this ride: <strong>⭐ {{ booking.rating }}</strong>
+      {% if booking.rating_comment %}<div style="margin-top:.4rem;font-style:italic">"{{ booking.rating_comment }}"</div>{% endif %}
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
   {% if booking.status in ('pending','confirmed') and booking.payment_status!='paid' %}
   <button class="btn btn-danger btn-sm" onclick="cancelRide('{{ booking._id }}')"><i class="fa fa-xmark"></i> <span data-i18n="detail.cancelRide">Cancel Booking</span></button>
   {% endif %}
@@ -394,6 +424,7 @@ var STAT = '{{ booking.status }}';
 var PLCK = {{ 'true' if booking.payment_locked else 'false' }};
 var FARE = {{ booking.fare }};
 var MT   = '8DcBKk2W2VGTtOYBBBgk';
+var COMM = {{ commission }};
 
 // Safe coord parse — returns 0 for empty/invalid
 function safeCoord(v){ var n=parseFloat(v); return isNaN(n)?0:n; }
@@ -450,7 +481,7 @@ function initMap(){
     // Start live polling for active bookings
     if(STAT === 'open' || STAT === 'pending' || STAT === 'confirmed' || STAT === 'in_progress'){
       pollDriver();
-      pollTimer = setInterval(pollDriver, 5000);
+      pollTimer = setInterval(pollDriver, 3000);
     }
   });
 }
@@ -606,7 +637,7 @@ function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
 
 window.cancelRide = function(id){
   if(!confirm('Cancel this booking?')) return;
-  fetch('/booking/'+id+'/cancel',{method:'POST'})
+  fetch('/booking/'+id+'/cancel',{method:'POST', headers:{'X-CSRFToken': getCsrfToken()}})
     .then(function(r){return r.json();})
     .then(function(d){ if(d.success) location.reload(); else alert(d.error||'Cannot cancel.'); });
 };
@@ -623,7 +654,7 @@ if(document.readyState === 'loading'){
 {% if booking.status == 'open' %}
 var _expiryInt = setInterval(async function() {
   try {
-    var r = await fetch('/booking/api/check-expiry/{{ booking._id }}', {method:'POST'});
+    var r = await fetch('/booking/api/check-expiry/{{ booking._id }}', {method:'POST', headers:{'X-CSRFToken': getCsrfToken()}});
     var d = await r.json();
     var banner = document.getElementById('expiry-banner');
     var msg    = document.getElementById('expiry-msg');
@@ -654,7 +685,9 @@ window.sharePayment = async function() {
   var btn = event.target.closest('button');
   if (btn) { btn.disabled=true; btn.innerHTML='<i class="fa fa-spinner spin"></i> Generating...'; }
   var r = await fetch('/booking/{{ booking._id }}/share-payment', {
-    method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken': getCsrfToken()},
+    body:'{}'
   });
   var d = await r.json();
   if (btn) { btn.disabled=false; btn.innerHTML='<i class="fa fa-share-nodes"></i> Share Payment Link'; }
@@ -705,7 +738,8 @@ window.repostBooking = async function() {
   var fare = parseFloat(document.getElementById('repost-fare').value);
   if (!fare || fare < 10) { alert('Minimum ₹10'); return; }
   var r = await fetch('/booking/{{ booking._id }}/repost', {
-    method:'POST', headers:{'Content-Type':'application/json'},
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken': getCsrfToken()},
     body: JSON.stringify({fare: fare})
   });
   var d = await r.json();
@@ -719,7 +753,8 @@ window.confirmQuote = async function(driverId, driverName, price) {
   var btn = document.getElementById('confirm-'+driverId);
   if (btn) { btn.disabled=true; btn.innerHTML='<i class="fa fa-spinner spin"></i> Confirming...'; }
   var r = await fetch('/booking/{{ booking._id }}/confirm-quote', {
-    method:'POST', headers:{'Content-Type':'application/json'},
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken': getCsrfToken()},
     body: JSON.stringify({driver_id: driverId})
   });
   var d = await r.json();
@@ -735,9 +770,9 @@ window.confirmQuote = async function(driverId, driverName, price) {
 window.updatePayAmount = function() {
   var val = parseFloat((document.getElementById('pay-amount-input')||{}).value || 0);
   if (val < 10) return;
-  var earn = Math.max(0, val - 2);
+  var earn = Math.max(0, val - COMM);
   var note = document.getElementById('earn-note');
-  if (note) note.textContent = 'Driver gets ₹' + Math.round(earn) + ' · ₹2 platform fee';
+  if (note) note.textContent = 'Driver gets ₹' + Math.round(earn) + ' · ₹' + COMM + ' platform fee';
   var link = document.getElementById('pay-online-link');
   if (link) link.href = '/payment/checkout/' + BID + '?amount=' + Math.round(val);
 };
@@ -748,7 +783,8 @@ window.payCash = async function() {
   if (amt < 10) { alert('Enter an amount to pay (minimum ₹10)'); if(amtEl) amtEl.focus(); return; }
   if (!confirm('Confirm cash payment of ₹' + Math.round(amt) + ' directly to driver?')) return;
   var r = await fetch('/payment/cash/{{ booking._id }}', {
-    method:'POST', headers:{'Content-Type':'application/json'},
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken': getCsrfToken()},
     body: JSON.stringify({amount: amt})
   });
   var d = await r.json();
